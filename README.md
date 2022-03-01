@@ -1,4 +1,4 @@
-# bata_nas_ms
+## bata_nas
  
 PROJECT-LEVEL README FILE
 ----------
@@ -9,7 +9,7 @@ Date of project start: 2022-02-22
 
 Study Name: BATA
 
-Project Name:BATANAS
+Project Name:BATA_NAS
 
 Type of Project (Paper/Poster/Grant/Talk/DescribeOther): Paper
 
@@ -19,11 +19,9 @@ Senior author: ?
 
 Additional authors: Eisenlohr-Moul, Morrow, Dichter, Girdler?
 
-Name of CLEAR Lab Zotero Library for Literature Review: N/A
-
 Will this analytic project be preregistered (e.g., on OSF, clinicaltrials.gov)?: Yes, OSF
 
-URL for preregistration (if applicable): https://osf.io/qha9e
+## URL for preregistration (if applicable): https://osf.io/qha9e
 
 Date of preregistration or prospectus approval by study PI: Feb 22, 2022
 
