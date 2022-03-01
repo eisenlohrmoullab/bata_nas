@@ -18,6 +18,6 @@ Additional authors: Eisenlohr-Moul, Morrow, Dichter, Girdler?
 
 Will this analytic project be preregistered (e.g., on OSF, clinicaltrials.gov)?: Yes, OSF
 
-## URL for preregistration (if applicable): https://osf.io/qha9e
+URL for preregistration (if applicable): https://osf.io/qha9e
 
 Date of preregistration or prospectus approval by study PI: Feb 22, 2022
