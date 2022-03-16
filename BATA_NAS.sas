@@ -1,8 +1,7 @@
 /*BATA 2022 NAS-IMMUNE-THREAT-SX - PREREGISTERED*/
-/* DATA PREPARATION*/
-LIBNAME batanas "Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/03_code_dataedits_output/bata_nas";
 
-/*IMPORT STATE DATASETS*/
+/*IMPORT DATASETS*/
+
 /*Import Immune Data*/
 
 data batanas.immune /*(keep=subject_id torytime il6 tnfa crp)*/;
