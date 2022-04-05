@@ -12,7 +12,7 @@ Type of Project (Paper/Poster/Grant/Talk/DescribeOther): Paper
 
 First author: Erin Walsh
 
-Senior author: ? 
+Senior author: Tory Eisenlohr-Moul or Gabriel Dichter 
 
 Additional authors: Eisenlohr-Moul, Morrow, Dichter, Girdler?
 
@@ -21,3 +21,5 @@ Will this analytic project be preregistered (e.g., on OSF, clinicaltrials.gov)?:
 URL for preregistration (if applicable): https://osf.io/qha9e
 
 Date of preregistration or prospectus approval by study PI: Feb 22, 2022
+
+Slack Channel Link: https://wemosworkspace.slack.com/archives/C02JE3SBPNH
