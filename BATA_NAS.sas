@@ -1,6 +1,130 @@
 /*BATA 2022 NAS-IMMUNE-THREAT-SX - PREREGISTERED*/
 
-/*IMPORT DATASETS*/
+*Set Working Project Folder - Coding, Data Edits, and Output; 
+
+libname batanas "Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/03_code_dataedits_output";
+
+/* [D] DATA SECTION - i=import, m=merge, p=prep*/
+
+*[Di-1] Import self-report dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/bata_selfreport.csv';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=CSV
+	OUT=batanas.selfreport REPLACE;
+	GETNAMES=YES;
+RUN;
+
+*[Di-2] Import NAS and Repro dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/batanasrepro.csv';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=CSV
+	OUT=batanas.nasrepro REPLACE;
+	GETNAMES=YES;
+RUN;
+
+*[Di-3] Import Immune dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/immune_3.8.22.csv';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=CSV
+	OUT=batanas.immune REPLACE;
+	GETNAMES=YES;
+RUN;
+
+*[Di-4] Import BMI dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/BMI_pp.xlsx';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=XLSX
+	OUT=batanas.bmi REPLACE;
+	GETNAMES=YES;
+RUN;
+
+proc sort data=batanas.bmi; by subject_id visit_fmri; run;
+
+*[Di-5] Import Hammer dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/Hammer_fq_cope6_07.28.2021.xlsx';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=XLSX
+	OUT=batanas.hammer21 REPLACE;
+	GETNAMES=YES;
+RUN;
+
+*[Di-6] Import Hammer Amygdala dataset and save to working project folder;
+
+FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/02_data_import_snapshot/Hammer_amy_fq_cope8_03.09.2022.xlsx';
+
+PROC IMPORT DATAFILE=REFILE
+	DBMS=XLSX
+	OUT=batanas.hammer22 REPLACE;
+	GETNAMES=YES;
+RUN;
+
+
+*[Dm-1] Merge selfreport and nasrepro into temp1;
+
+data temp1; 
+merge batanas.selfreport batanas.nasrepro; 
+by Subject_ID visit_mlm; 
+run;
+
+proc sort data=temp1; by subject_id visit_fmri; run;
+
+*[Dm-2] Merge temp1, immune into temp2;
+
+data temp2; 
+merge temp1 batanas.immune; 
+by Subject_ID visit_fmri; 
+run;
+
+*[Dm-3] Merge temp1, immune, BMI into temp2;
+
+data temp2; 
+merge temp1 batanas.immune batanas.bmi; 
+by Subject_ID visit_fmri; 
+run;
+
+proc sort data=temp2; by subject_id scan; run;
+
+
+*[Dm-3] Merge temp2, hammer21, hammer22 into batanaspp;
+
+data batanas.batanaspp; 
+merge temp2 batanas.hammer21 batanas.hammer22; 
+by Subject_ID Scan; 
+run;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*Import Immune Data*/
 
