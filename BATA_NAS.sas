@@ -111,6 +111,146 @@ run;
 
 
 
+*Preregistration Text;
+
+
+Study Information
+Hypotheses
+Our primary interest in these analyses is to determine whether GABAergic neuroactive steroids are associated with lower inflammation, threat-related brain activation, and psychiatric symptoms, both between-person and within-person over time. Drawing on recent preclinical studies demonstrating an ability of neuroactive steroids to regulate inflammatory processes, we predict negative associations of commonly-studied GABAergic neuroactive steroids (Pregnenolone, Allopregnanolone, Pregnanolone, as well as ratios of pregnenolone and progesterone to both allopregnanolone and pregnanolone) with measures of peripheral inflammation, threat-related brain activation, and psychiatric symptoms. Exploratory analyses will examine how the other neuroactive steroids are associated with these outcomes. 
+Design Plan
+Study type
+Observational Study - Data is collected from study subjects that are not randomly assigned to a treatment. This includes surveys, "natural experiments," and regression discontinuity designs.
+Blinding
+No blinding is involved in this study.
+Is there any additional blinding in this study?
+Note: While participants are enrolled in a RCT (experiment), there is no blinding involved, and this experimental variable is not of interest in the present archival analysis. Randomization to either mindfulness-based cognitive therapy (MBCT) or behavioral activation therapy for anhedonia (BATA) will be included as a covariate in sensitivity analyses. 
+Study design
+Within-person observational study with repeated measures of all study variables. While the data are derived from an RCT comparing two behavioral interventions, this experimental manipulation is not of interest in the present analyses. Randomization to either mindfulness-based cognitive therapy (MBCT) or behavioral activation therapy for anhedonia (BATA) will be included as a covariate in sensitivity analyses. 
+No files selected
+Randomization
+Individual participants were randomized (simple randomization) to one of the two behavioral interventions (mindfulness-based cognitive therapy (MBCT) or behavioral activation therapy for anhedonia (BATA)). This randomization was carried out by an investigator not involved in study design or participant interaction. 
+Sampling Plan
+Existing Data
+Registration prior to analysis of the data
+Explanation of existing data
+We have already examined between- and within-person correlations between peripheral inflammatory markers, task-related brain activation in the threat processing task, and transdiagnostic psychiatric symptoms.We have not examined neuroactive steroid data in relation to other key study variables nor examined between and within-person associations among the neuroactive steroids.
+
+Any observed patterns among symptoms, neuroimaging, and inflammatory markers in prior analyses were NOT used to update hypotheses as presented in this preregistration (which remain broad, with predictions in line with previously-published literature); that is, we continue to report hypotheses as they were presented in prior communications, including invited talks and grant submissions. 
+
+ Since reproductive status (particularly pregnancy and luteal phase of the menstrual cycle) are known to exponentially increase progesterone levels, and since progesterone is the precursor to several GABAergic neuroactive steroids of interest in the present study, we did pre-evaluate the impact of reproductive status on progesterone in order to derive a meaningful covariate for use in analyses. We first created a categorical "reproductive status" variable including the following options: male sex, combined oral contraceptive-using female, LNG-IUD-using female, post-menopausal female, naturally cycling female in the follicular phase of the menstrual cycle, and naturally cycling female in the luteal phase of the menstrual cycle. Next, we ran ANOVA models to examine which categories differed significantly from one another. Results yielded a very clear picture in which Naturally-Cycling Luteal Phase Females had significantly higher levels of progesterone than all other categories, and no other pairwise differences emerged. Visual inspection of data suggested that either (1) binary classification at the observation level for luteal phase status (vs. all other reproductive statuses) or (2) covarying levels of progesterone at each visit, represent equally reasonable approaches to removing variance associated with the menstrual cycle in our primary models. Therefore, depending on appropriateness for our outcome of interest, we will engage one of these two strategies. 
+Data collection procedures
+This protocol was approved by the IRBs at the University of North Carolina-Chapel Hill (UNC) and the Duke University Health System. DSM-5 diagnoses were made using the SCID-5 by research assessors trained to 100% diagnostic reliability with a standard rater over a minimum of three training interviews. Participants were randomized to weekly 45-minute individual sessions of either Behavioral Activation for Anhedonia (BATA) or Mindfulness-Based Cognitive Therapy (MBCT), with a crossed-therapist design (i.e., all therapists delivered both treatment modalities). Therapy was considered complete after 15 weeks or after a minimum of 8 sessions plus the therapist's assessment that participants obtained maximum benefit. Anhedonia severity was measured weekly via the Snaith Hamilton Pleasure Scale (SHAPS) at each therapy and neuroimaging session. Ultrahigh field (7T) MRI scans were acquired at the UNC Biomedical Research Imaging Center within one-week pre-treatment and one-month following the final therapy session. Participants enrolled during the first two years of the trial also completed mid-treatment scans at weeks 8 and 12. The registered primary endpoint of the first phase of this trial was neural responses to rewards measured with fMRI and the secondary endpoint was changes in anhedonia as measured by the SHAPS.
+
+At each neuroimaging visit, prior to the scan, blood samples were collected by venipuncture into red-top (no additive) tubes, centrifuged for acquisition of serum, and stored at -80°C for batch testing. Inflammatory markers (IL-6, TNFa, and CRP) were measured using enzyme immunoassay (ELISA) methods and neuroactive steroids (see list in "Variables") were measured using gas chromatography–mass spectrometry (GC-MS) methods.
+
+During each 7T scan, participants completed the Hariri "Hammer" Task. This task elicits a robust and replicable amygdala response across an array of experimental protocols and sample populations. The task is divided into perceptual face-matching (x4: fearful, angry, sad, and neutral facial expressions) and sensorimotor control (x5) blocks. During face-matching blocks, participants view a trio of faces and select one of two faces (on the bottom) identical to a target face (on the top). During the control blocks, participants view a trio of geometric shapes and select one of two shapes (bottom) identical to a target shape (top). All blocks are preceded by a brief instruction ("Match Faces" or "Match Shapes"). Stimuli are presented for 4 seconds with a variable interstimulus interval (ISI) of 2-6 seconds. A variable ISI is used to minimize expectancy effects and resulting habituation and maximize amygdala reactivity throughout the paradigm. Total task time is 390 seconds. More information about the task can be found here: https://www.haririlab.com/methods/amygdala.html
+
+RECRUITMENT
+
+Participants were recruited via: 1) online advertisements on Facebook, Reddit, Craigslist, ResearchMatch.org, and IRB-approved university websites or listservs (e.g., UNC-Join The Conquest, DukeList, UNC mass email); 2) IRB-approved registries or repositories (e.g., UNC Hospital Carolina Data Warehouse for Health), and 3) direct referrals from local healthcare providers, Duke/UNC outpatient clinics, and other studies of depression.
+
+INCLUSION/EXCLUSION CRITERIA
+
+Inclusion criteria were ages 18-50 years old, clinically significant anhedonia defined by Snaith Hamilton Pleasure Scale (SHAPS) scores > 20, corresponding to clinically significant anhedonia, and Clinical Global Impressions-Severity scores > 3 to assure a clinically impaired sample. Exclusion criteria were psychotropic medication use in the past 30 days, MRI contradictions, concurrent psychotherapy, prior behavioral activation or mindfulness-based psychotherapy, or history of moderate or severe substance use disorder, eating disorder, bipolar disorder, or psychotic disorder assessed via the Structured Clinical Interview for DSM-5, Research Version (SCID-5), and suicidal intent or plan.
+No files selected
+Sample size
+73 individuals are included in these analyses, with each providing a variable number of repeated measures (see design section above).  
+Sample size rationale
+Data collection for the parent trial was paused in March of 2020 (due to the COVID-19 pandemic) and eventually transitioned to a telehealth format. In order to minimize risks associated with COVID-19 exposure or transmission, blood sampling was discontinued. Data used here include only those participants who completed the in-person protocol through March 2020. However, pairwise N's for examining the hypothesized associations are generally adequate to detect clinically-significant, medium-sized effects in most cases (Arend & Schafer, 2019). 
+
+Given the public health importance of questions to be answered, the rarefied nature of such multimodal data, and our desire to use the data to update our understanding of effect sizes of interest, bayesian multilevel models will be examined in addition to frequentist models. This will allow estimation of credible intervals for the size of each effect, and will inform hypothesis generation and refinement for future studies.
+Stopping rule
+N/A
+Variables
+Manipulated variables
+Study Group (Covariate) - Participants, recruited for elevated anhedonia symptoms, were randomized to receive either MBCT or BATA. This dichotomous variable is included as a covariate in sensitivity analyses. It is coded such that 0=MBCT and 1=BATA.  
+No files selected
+Measured variables
+TRANSDIAGNOSTIC SELF-REPORT SYMPTOMS
+
+*Primary analytic variables are starred; others will be used in exploratory and sensitivity analyses. 
+
+- Snaith-Hamilton Pleasure Scale (SHAPS)*
+- Beck Depression Inventory (BDI)*
+- Perceived Stress Scale (PSS)
+- Beck Anxiety Inventory (BAI)
+
+INFLAMMATORY MARKERS (high-sensitivity ELISA)
+
+- Interleukin-6 (IL-6) (pg/ml)*
+- Tumor Necrosis Factor-Alpha (TNFa) (pg/ml)*
+- C-Reactive Protein (CRP) (mg/l)*
+
+NEUROACTIVE STEROIDS (GC-MS) 
+
+- Pregnenolone (P5)*
+- 3a,5a-THP (Allopregnanolone)*
+- 3a,5b-THP (Pregnanolone)*
+- 3a,5a-THDOC
+- 3a,5b-THDOC
+- 3a,5a-A
+- 3a,5a-A-Diol
+- 3a,5b-A
+- 3a,5b-A-Diol 
+
+- Progesterone (P4) - covariate*
+
+NEUROIMAGING INDICES
+
+Primary contrasts of interest using the Hariri "Hammer" task:
+
+- All Faces ( > Control) Blocks*
+- Negative Faces (Angry + Fearful Block > Control) Blocks
+
+Our outcome variables are contrast-specific BOLD percent-signal change value.
+
+Both small-volume correction (SVC) and whole-brain approaches were used for neuroimaging analyses. Our primary region-of-interest for SVC analyses was the amygdala (left and right hemispheres), as defined by the AAL atlas. The permutation analysis of linear models (PALM) toolbox (https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM/) was used to generate SVC and whole-brain task-based functional activation maps. For our application of PALM, data were permuted 5000 times and significant effects were identified through threshold-free cluster enhancement method (TFCE), controlling for family-wise error (FWE) rate of P < 0.05. For each contrast, we examined task-related brain activation at baseline (group-level one-sample t-test), as well as the change in activation from pre- to post-treatment (2x2 Mixed Effect ANOVA examining the effect of Time and interaction of Group*Time). For activation maps that yielded significant clusters, BOLD percent-signal change values were calculated and extracted for each participant and time-point. 
+
+COVARIATES
+
+- Body Mass Index (BMI)* 
+- Biological Sex* 
+- Age*
+- Reproductive Status (Luteal Phase Naturally-Cycling Female vs. Other)*
+
+- Current progesterone level (as appropriate vs. reproductive status)
+- RCT condition (BATA vs. MBCT) 
+- Medications
+No files selected
+Indices
+In addition to evaluating associations of individual pregnane neuroactive steroids with other variables, we will calculate ratios of P4 to downstream metabolites: 
+
+- P4: ALLO*
+- P4: Pregnanolone*
+- P4: Pregnanolone+ALLO*
+- Pregnenolone: ALLO*
+- Pregnenolone: Pregnanolone*
+- Pregnenolone: Pregnanolone+ALLO*
+No files selected
+Analysis Plan
+Statistical models
+Analyses will be conducted for two separate purposes in two different ways. 
+
+First, a smaller set of variables will be evaluated for the purposes of testing specific hypotheses (see asterisks for denoted "Primary" variables above). In addition to frequentist multilevel models, bayesian multilevel models will also be utilized to generate credible intervals for estimates. 
+
+Second, exploratory analyses will examine the remaining variables for the purposes of generating new hypotheses and guiding model development. 
+
+(1) To evaluate the relative contributions of trait- and state-level variance in neuroactive steroids in predicting inflammatory markers, neural indices of threat activation, and symptoms, a series of multilevel models (with observations nested within participants) will evaluate the relative contributions of between-person (person mean across all observations) and within-person (deviations of the current observation from the person mean) variability in neurosteroids on each outcome. We predict that higher levels of neurosteroids (and neurosteroid ratios) will be associated with positive outcomes at both the between and within-person levels. 
+
+(2)  To evaluate how differences in neurosteroid change from pre- to post-treatment (specified as a L2 trait-like variable, calculated as post minus pre) MODERATE the trajectory of other outcomes across the trial (neurosteroid change score * time), we will utilize multilevel growth models. We expect that those with greater increases (or lesser decreases) in neurosteroid levels and ratios from pre- to post- treatment will show a greater decline in inflammatory markers, neural threat indices, and psychiatric symptoms across treatment. 
+No files selected
+Transformations
+see above.
+Inference criteria
+Alpha will be set at the arbitrary threshold of .05, and effects that cross this "significance" threshold will be interpreted as possible associations of interest for future study given the strong possibility of Type 1 error with the large number of proposed tests. We will place greater emphasis on knowledge gained from bayesian analyses (e.g., comparing credible intervals to minimally-interesting effect sizes) and how these can inform model refinement and design of future studies. 
+Data exclusion
+Sensitivity analyses will examine models with and without univariate outliers (>=3 SD away from the mean), as well as with and without any cases suspected to be multivariate outliers following multilevel regression diagnostics. 
+Missing data
+Maximum likelihood estimation accommodates missing data in multilevel models. We do not have plans to use imputation at this time. 
+Exploratory analysis
+SENSITIVITY ANALYSES
+
+- Additional sensitivity analyses will be undertaken to evaluate the robustness of associations (effect size, significance level) to inclusion of additional covariates, as well as to use of alternatively specified models (e.g., if residuals are not normally distributed). 
 
 
 
