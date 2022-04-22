@@ -121,6 +121,14 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 		delete;
 run;
 
+*[D-10.5] REMOVE OBVIOUS OUTLIERS;
+
+data batanaspp; 
+set batanaspp; 
+if allo>1000 then allo=.; /*Sets two observations to missing - one at ~2k, one at ~10k*/
+if thdoc>350 then thdoc=.; /*Sets one observation to missing - one at ~400*/
+run;
+
 *[D-11] Eliminate Duplicate Cases;
 
 proc sort data=batanaspp nodupkey out=batanaspp;
@@ -327,7 +335,6 @@ run;
 %mend;
 
 %plotovertimerun;
-
 
 
 
