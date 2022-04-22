@@ -258,20 +258,83 @@ proc standard data=batanastrait out=batanastrait m=0 std=1;
 var zbmi zage;
 run;
 
-proc print data=batanastrait; 
-run;
+
 
 
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
 
-*[A-1] - Between-Person Descriptives; 
+*[A-1] - Print Between-Person Trait Dataset; 
 
-/* ADD HERE*/ 
+proc print data=batanastrait; 
+run; 
+
+*[A-2] - Output Frequencies for categorical traits;
+
+proc freq data=batanastrait; 
+table id afab tx;
+run; 
+		
+*[A-3] - Output Means for continuous traits;
+
+proc means data=batanastrait; 
+var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
+		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
+		p4allopregnam p5allom p5pregnam p5allopregnam;
+		run; 
+
+*[A-4] - Output Histograms for continuous traits;
+		
+		proc univariate data=batanastrait; 
+		var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
+		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
+		p4allopregnam p5allom p5pregnam p5allopregnam;
+		histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
+		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
+		p4allopregnam p5allom p5pregnam p5allopregnam; 
+		ods select histogram; 
+		run; 
+		
+*[A-5] - Within-Person Plots of repeated measures over Time; 
+
+
+ods graphics on / width=12in;
+ods graphics on / height=6in; 
+
+%macro plotovertime (yvar=);
+
+proc sgplot data=batanaspp; 
+xaxis integer; 
+series 	x=scannum y=&yvar/ group=id markers ; 
+run;	
+
+%mend;
+
+%let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
+		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
+		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
+		p4allopregna p5allo p5pregna p5allopregna;
+
+%macro plotovertimerun;
+	%do i=1 %to 30;
+		%let yvar=%scan(&ylist, &i);
+		%plotovertime(yvar=&yvar);
+	%end;
+%mend;
+
+%plotovertimerun;
+
+
+
 
 
 *[A-2] - Within-Person Descriptives; 
+
+
 
 /* ADD HERE*/ 
 
