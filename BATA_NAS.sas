@@ -80,7 +80,7 @@ run;
 
 *[D-10] Merge temp2, hammer21, hammer22 into batanaspp, select only the variables we need, and PREP new variables;
 
-data batanaspp (keep=id scan behav_wk age sex tx bmi SHAPS BAI BDI PSS 
+data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
 		prog_ng_ml meno Hormonal_Status luteal p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		OralContraceptive Progestin_IUD BMI_final pcing7 pcing7_SD pcing6 pcing6_SD 
@@ -109,6 +109,12 @@ data batanaspp (keep=id scan behav_wk age sex tx bmi SHAPS BAI BDI PSS
 	lutvsall=.; 
 	if luteal=1 then lutvsall=1; 
 	else lutvsall=0; 
+	
+	/*create afab variable*/ 
+	
+	afab=.; 
+	if sex="F" then afab=1;
+	else afab=0;
 
 	/* Deletes cases with no id number*/
 	if id=. then
@@ -213,19 +219,52 @@ run;
 
 %mend;
 
-%let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
 		p4allopregna p5allo p5pregna p5allopregna;
 
 %macro meansanddevsrun;
-	%do i=1 %to 29;
+	%do i=1 %to 30;
 		%let yvar=%scan(&ylist, &i);
 		%meansanddevs(yvar=&yvar);
 	%end;
 %mend;
 
 %meansanddevsrun;
+
+*[D-14] Saving one obs per person (trait);
+
+proc sort data=batanaspp out=batanastrait nodupkey; 
+by id; 
+run;
+
+*[D-15] Saving smaller dataset and creating zbmi and zage; 
+
+data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
+		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
+		p4allopregnam p5allom p5pregnam p5allopregnam); 
+set batanastrait; 
+
+zage=age; 
+/* Note: BMI here is represented by mean BMI across the trial*/
+zbmi=bmim; 
+run;
+
+*[D-16] z-scoring BMI and age;
+
+proc standard data=batanastrait out=batanastrait m=0 std=1; 
+var zbmi zage;
+run;
+
+proc print data=batanastrait; 
+run;
+
+
+/************************************************************/
+/*END DATA PREP*/
+/************************************************************/
 
 *[A-1] - Between-Person Descriptives; 
 
@@ -235,6 +274,14 @@ run;
 *[A-2] - Within-Person Descriptives; 
 
 /* ADD HERE*/ 
+
+proc freq data=batanaspp; 
+table lutvsall; 
+run;
+
+proc print data=batanaspp; 
+var id scan sex behav_wk lutvsall; 
+run;
 
 
 *[A-3] - Models Examining Between- and Within-Person Associations of NAS with other repeated measures; 
@@ -259,6 +306,8 @@ proc mixed data=batanaspp covtest;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
+	
+	
 	
 %mend;
 
