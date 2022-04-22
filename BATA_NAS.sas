@@ -103,18 +103,22 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	p5allo=p5/allo;
 	p5pregna=p5/pregna;
 	p5allopregna=p5/(allo+pregna);
-	
-	/*create reproductive status variable*/ 
-	
-	lutvsall=.; 
-	if luteal=1 then lutvsall=1; 
-	else lutvsall=0; 
-	
-	/*create afab variable*/ 
-	
-	afab=.; 
-	if sex="F" then afab=1;
-	else afab=0;
+
+	/*create reproductive status variable*/
+	lutvsall=.;
+
+	if luteal=1 then
+		lutvsall=1;
+	else
+		lutvsall=0;
+
+	/*create afab variable*/
+	afab=.;
+
+	if sex="F" then
+		afab=1;
+	else
+		afab=0;
 
 	/* Deletes cases with no id number*/
 	if id=. then
@@ -123,10 +127,17 @@ run;
 
 *[D-10.5] REMOVE OBVIOUS OUTLIERS;
 
-data batanaspp; 
-set batanaspp; 
-if allo>1000 then allo=.; /*Sets two observations to missing - one at ~2k, one at ~10k*/
-if thdoc>350 then thdoc=.; /*Sets one observation to missing - one at ~400*/
+data batanaspp;
+	set batanaspp;
+
+	if allo>1000 then
+		allo=.;
+
+	/*Sets two observations to missing - one at ~2k, one at ~10k*/
+	if thdoc>350 then
+		thdoc=.;
+
+	/*Sets one observation to missing - one at ~400*/
 run;
 
 *[D-11] Eliminate Duplicate Cases;
@@ -177,7 +188,6 @@ run;
 %mend;
 
 %savebaselinerun;
-
 *[D-13] Saving Person Means for repeated measures and Sample Standardizing individual diffs in means, as well as calculating state deviations;
 
 %macro meansanddevs (yvar=);
@@ -240,85 +250,89 @@ run;
 %mend;
 
 %meansanddevsrun;
-
 *[D-14] Saving one obs per person (trait);
 
-proc sort data=batanaspp out=batanastrait nodupkey; 
-by id; 
+proc sort data=batanaspp out=batanastrait nodupkey;
+	by id;
 run;
 
-*[D-15] Saving smaller dataset and creating zbmi and zage; 
+*[D-15] Saving smaller dataset and creating zbmi and zage;
 
-data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
-		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
-		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
-		p4allopregnam p5allom p5pregnam p5allopregnam); 
-set batanastrait; 
+data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m 
+		allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
+		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m 
+		pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
+		p5pregnam p5allopregnam);
+	set batanastrait;
+	zage=age;
 
-zage=age; 
-/* Note: BMI here is represented by mean BMI across the trial*/
-zbmi=bmim; 
+	/* Note: BMI here is represented by mean BMI across the trial*/
+	zbmi=bmim;
 run;
 
 *[D-16] z-scoring BMI and age;
 
-proc standard data=batanastrait out=batanastrait m=0 std=1; 
-var zbmi zage;
+proc standard data=batanastrait out=batanastrait m=0 std=1;
+	var zbmi zage;
 run;
 
+*[D-17] Re-merging trait zbmi and zage into person-period dataset;
+
+data batanaspp; 
+merge batanaspp batanastrait; 
+by id; 
+if id=. then delete;
+run;
 
 
 
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
+*[A-1] - Print Between-Person Trait Dataset;
 
-*[A-1] - Print Between-Person Trait Dataset; 
-
-proc print data=batanastrait; 
-run; 
+proc print data=batanastrait;
+run;
 
 *[A-2] - Output Frequencies for categorical traits;
 
-proc freq data=batanastrait; 
-table id afab tx;
-run; 
-		
+proc freq data=batanastrait;
+	table id afab tx;
+run;
+
 *[A-3] - Output Means for continuous traits;
 
-proc means data=batanastrait; 
-var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
-		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
-		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
-		p4allopregnam p5allom p5pregnam p5allopregnam;
-		run; 
+proc means data=batanastrait;
+	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam;
+run;
 
 *[A-4] - Output Histograms for continuous traits;
-		
-		proc univariate data=batanastrait; 
-		var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
-		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
-		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
-		p4allopregnam p5allom p5pregnam p5allopregnam;
-		histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
-		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
-		pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
-		p4allopregnam p5allom p5pregnam p5allopregnam; 
-		ods select histogram; 
-		run; 
-		
-*[A-5] - Within-Person Plots of repeated measures over Time; 
 
+proc univariate data=batanastrait;
+	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam;
+	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
+		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
+		etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm 
+		L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom p5pregnam 
+		p5allopregnam;
+	ods select histogram;
+run;
 
-ods graphics on / width=12in;
-ods graphics on / height=6in; 
+*[A-5] - Within-Person Plots of repeated measures over Time;
+ods graphics on / width=8in;
+ods graphics on / height=6in;
 
 %macro plotovertime (yvar=);
-
-proc sgplot data=batanaspp; 
-xaxis integer; 
-series 	x=scannum y=&yvar/ group=id markers ; 
-run;	
+	proc sgplot data=batanaspp;
+		xaxis integer;
+		series x=scannum y=&yvar/ group=id markers;
+	run;
 
 %mend;
 
@@ -336,25 +350,19 @@ run;
 
 %plotovertimerun;
 
+*[A-2] - Within-Person Descriptives;
 
-
-
-*[A-2] - Within-Person Descriptives; 
-
-
-
-/* ADD HERE*/ 
-
-proc freq data=batanaspp; 
-table lutvsall; 
+/* ADD HERE*/
+proc freq data=batanaspp;
+	table lutvsall;
 run;
 
-proc print data=batanaspp; 
-var id scan sex behav_wk lutvsall; 
+proc print data=batanaspp;
+	var id scan sex behav_wk lutvsall;
 run;
 
+*[A-3] - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
 
-*[A-3] - Models Examining Between- and Within-Person Associations of NAS with other repeated measures; 
 /**/
 /*FROM PREREG: (1) To evaluate the relative contributions of trait- and state-level variance
 in neuroactive steroids in predicting inflammatory markers, neural indices of
@@ -366,33 +374,66 @@ variability in neurosteroids on each outcome. We predict that higher levels of
 neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 
-%macro covar(xvar=, yvar=);
+
 
 proc mixed data=batanaspp covtest;
-		class id sex lutvsall;
-		model &yvar=bmi sex age lutvsall z&xvar.m &xvar.d/ solution 
-			ddfm=kr;
+		class id lutvsall (ref=first);
+		model shaps= lutvsall/ solution ddfm=kr;
+		random intercept /subject=id type=vc;
+		
+		title " SHAPS COV PARMS";
+	run;
+
+%macro covar(xvar=, yvar=);
+
+	proc mixed data=batanaspp covtest;
+		class id ;
+		model &yvar=/ solution ddfm=kr;
+		random intercept /subject=id type=vc;
+		ods select covparms;
+		title " &yvar COV PARMS";
+	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id afab (ref=first) lutvsall (ref=first);
+		model &yvar=zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kr;
 		random intercept &xvar.d/subject=id type=vc;
-		ods select Nobs fitstatistics covparms solutionf;
+		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
 	
+	proc mixed data=batanaspp covtest;
+		class id afab (ref=first) lutvsall (ref=first);
+		model &yvar=zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kr;
+		random intercept /subject=id type=vc;
+		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
+	run;
 	
+	/*proc sgplot data=batanaspp; 
+	reg x=z&xvar.m y=z&yvar.m; 
+	title "TRAIT: Predicting &yvar mean from &xvar mean";
+	run;
 	
+	proc sgplot data=batanaspp; 
+	reg x=&xvar.d y=&yvar/group=id; 
+	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
+	title "STATE: Predicting &yvar deviations from &xvar deviations";
+	run;*/
+
 %mend;
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
+		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
 		p4allopregna p5allo p5pregna p5allopregna;
-		
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
 
 %macro covarrun;
-	%do j=1 %to 1 ; /*24*/
+	%do j=1 %to 1 /*15*/;
 
-		%do i=1 %to 13 /*13*/;
+		
+		%do i=1 %to 1 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%covar(yvar=&yvar, xvar=&xvar);
@@ -401,31 +442,6 @@ proc mixed data=batanaspp covtest;
 %mend;
 
 %covarrun;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-	
-	
-	
-	
-	
 
 /* How do they covary*/
 %macro covar(xvar=, yvar=);
@@ -564,15 +580,6 @@ R_caud_6 R_put_3 R_put_6 cuerew_c9 cuerew_c10 cuerew_c11 cuerew_c12 PwSN PwFPN P
 %mend;
 
 %covarrun;
-
-
-
-
-
-
-
-
-
 *Preregistration Text;
 
 /*(1) To evaluate the relative contributions of trait- and state-level variance
@@ -674,8 +681,6 @@ purposes of generating new hypotheses and guiding model development. */
 univariate outliers (>=3 SD away from the mean), as well as with and without
 any cases suspected to be multivariate outliers following multilevel
 regression diagnostics. */
-
-
 *DESCRIPTIVES;
 
 /*Run Frequencies for Categorical Variables*/
@@ -796,7 +801,6 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 %correlrun;
 
 /* Models predicting Baseline Symptoms from immune vars */
-
 %macro immunebaseline (yvar=);
 	ods html5 style=htmlblue 
 		path='Y:\Box\01 - CLEAR Lab Data & Analyses\myfolders\BATA2021\' file="%sysfunc(today(), yymmddd10.) - BATA2021 - traj OL and trait 3sd OL rem - Predicting Baseline &yvar from age, sex, hormones, and Immune Vars.html";
@@ -1215,7 +1219,6 @@ emoneg physabuse physneg sexabuse  age ;
 %mend;
 
 %crosslevelrun;
-
 
 /* How do they covary - MOD BY CTQ*/
 *Clear Results Viewer;
