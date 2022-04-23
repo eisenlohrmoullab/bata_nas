@@ -83,9 +83,9 @@ run;
 data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
 		prog_ng_ml meno Hormonal_Status luteal p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		OralContraceptive Progestin_IUD BMI_final pcing7 pcing7_SD pcing6 pcing6_SD 
+		OralContraceptive Progestin_IUD BMI_final pcing7 pcing6 
 		L_Amy_cp8 R_Amy_cp8 p4allo p4pregna p4allopregna p5allo p5pregna p5allopregna 
-		scannum lutvsall allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5);
+		scannum luteal allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5);
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -103,21 +103,12 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	p5allo=p5/allo;
 	p5pregna=p5/pregna;
 	p5allopregna=p5/(allo+pregna);
-	
 	allop4=allo/p4;
 	pregnap4=pregna/p4;
 	allopregnap4=(allo+pregna)/p5;
 	allop5=allo/p5;
 	pregnap5=pregna/p5;
 	allopregnap5=(allo+pregna)/p5;
-
-	/*create reproductive status variable*/
-	lutvsall=.;
-
-	if luteal=1 then
-		lutvsall=1;
-	else
-		lutvsall=0;
 
 	/*create afab variable*/
 	afab=.;
@@ -126,6 +117,10 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 		afab=1;
 	else
 		afab=0;
+		
+		/*recode missing luteal to 0*/ 
+		if luteal=999 then luteal=0; 
+		if luteal=. then luteal=0; 
 
 	/* Deletes cases with no id number*/
 	if id=. then
@@ -184,11 +179,10 @@ run;
 
 %let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro savebaselinerun;
-	%do i=1 %to 35;
+	%do i=1 %to 27;
 		%let yvar=%scan(&ylist, &i);
 		%savebaseline(yvar=&yvar);
 	%end;
@@ -244,19 +238,19 @@ run;
 
 %mend;
 
-%let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= bmi luteal SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro meansanddevsrun;
-	%do i=1 %to 36;
+	%do i=1 %to 29;
 		%let yvar=%scan(&ylist, &i);
 		%meansanddevs(yvar=&yvar);
 	%end;
 %mend;
 
 %meansanddevsrun;
+
 *[D-14] Saving one obs per person (trait);
 
 proc sort data=batanaspp out=batanastrait nodupkey;
@@ -265,16 +259,20 @@ run;
 
 *[D-15] Saving smaller dataset and creating zbmi and zage;
 
-data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m 
+data batanastrait (keep=id natcyc zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m 
 		allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
-		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m 
-		pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
-		p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m);
+		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing6m 
+	 L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m allopregnap4m allop5m pregnap5m 
+		allopregnap5m);
 	set batanastrait;
 	zage=age;
 
 	/* Note: BMI here is represented by mean BMI across the trial*/
 	zbmi=bmim;
+	/*Create Natural Cycling Trait Variable incidating people who have natural menstrual cycles*/ 
+	natcyc=.; 
+	if lutealm>0 then natcyc=1; 
+	else natcyc=0;
 run;
 
 *[D-16] z-scoring BMI and age;
@@ -285,19 +283,18 @@ run;
 
 *[D-17] Re-merging trait zbmi and zage into person-period dataset;
 
-data batanaspp; 
-merge batanaspp batanastrait; 
-by id; 
-if id=. then delete;
+data batanaspp;
+	merge batanaspp batanastrait;
+	by id;
+
+	if id=. then
+		delete;
+		
 run;
-
-
 
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
-
-
 *[A-1] - Print Between-Person Trait Dataset;
 
 proc print data=batanastrait;
@@ -306,7 +303,7 @@ run;
 *[A-2] - Output Frequencies for categorical traits;
 
 proc freq data=batanastrait;
-	table id afab tx;
+	table id afab natcyc tx natcyc*tx;
 run;
 
 *[A-3] - Output Means for continuous traits;
@@ -314,9 +311,9 @@ run;
 proc means data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
-		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m 
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam allop4m 
+		pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 run;
 
 *[A-4] - Output Histograms for continuous traits;
@@ -324,12 +321,12 @@ run;
 proc univariate data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
-		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m 
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam allop4m 
+		pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
 		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
-		etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm 
+		etiocholanediolm CRPm IL6m TNFam pcing7m pcing6m 
 		L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom p5pregnam 
 		p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	ods select histogram;
@@ -337,27 +334,34 @@ run;
 
 *[A-5] - Correlations Among Continuous Traits;
 
-proc corr data=batanastrait spearman ;
-partial afab age bmim; 
-	var SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
-		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
-		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+proc corr data=batanastrait spearman;
+	partial afab natcyc age bmim;
+	var SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
+		pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
+		p4allopregnam p5allom p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m 
+		allop5m pregnap5m allopregnap5m;
 run;
 
 proc corr data=batanastrait spearman best=10;
-partial afab age bmim; 
-	var p4m allom pregnam p5m thdocm 
-		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
-		 p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m; 
-	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m ;
+	partial afab natcyc age bmim;
+	var p4m allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
+		etiocholanonem etiocholanediolm p4allom p4pregnam p4allopregnam p5allom 
+		p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m 
+		allopregnap5m;
+	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m 
+	 L_Amy_cp8m R_Amy_cp8m;
 run;
 
 
 
-*[A-6] - Within-Person Plots of repeated measures over Time;
+*[A-6] - Within-Person Descriptives;
+
+proc freq data=batanaspp;
+	table luteal;
+run;
+
+*[A-7] - Within-Person Plots of repeated measures over Time;
 ods graphics on / width=8in;
 ods graphics on / height=6in;
 
@@ -371,11 +375,10 @@ ods graphics on / height=6in;
 
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro plotovertimerun;
-	%do i=1 %to 30;
+	%do i=1 %to 28;
 		%let yvar=%scan(&ylist, &i);
 		%plotovertime(yvar=&yvar);
 	%end;
@@ -383,21 +386,9 @@ ods graphics on / height=6in;
 
 %plotovertimerun;
 
-*[A-7] - Within-Person Descriptives;
-
-/* ADD HERE*/
-proc freq data=batanaspp;
-	table lutvsall;
-run;
-
-proc print data=batanaspp;
-	var id scan sex behav_wk lutvsall;
-run;
-
 *[H-1] - HYPOTHESIS 1 TESTS - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
 
 /**/
-
 /*FROM PREREG: (1) To evaluate the relative contributions of trait- and state-level variance
 in neuroactive steroids in predicting inflammatory markers, neural indices of
 threat activation, and symptoms, a series of multilevel models (with
@@ -408,55 +399,62 @@ variability in neurosteroids on each outcome. We predict that higher levels of
 neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 
+/*Printing Scan Days Dataset to see  Missing Values*/ 
+
+proc print data=batanaspp;
+	var id scannum zbmi afab natcyc zage luteal shaps allo pregna p5 thdoc thdoc_3a5b 
+		androsterone androstanediol etiocholanone etiocholanediol allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 SHAPS BAI BDI PSS CRP IL6 TNFa 
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
+		where scannum ne .;
+run;
+
 
 %macro covar(xvar=, yvar=);
-
 	proc mixed data=batanaspp covtest;
-		class id ;
+		class id;
 		model &yvar=/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select covparms;
 		title "&yvar NULL MODEL";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
-		class id ;
-		model &yvar= scannum/ solution ddfm=kenwardroger2;
+		class id;
+		model &yvar=scannum/ solution ddfm=kenwardroger2;
 		random intercept scannum/subject=id type=vc;
 		ods select covparms solutionf;
 		title "&yvar UNCOND GROWTH MODEL";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept &xvar.d/subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
-	
 
 %mend;
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		androsterone androstanediol etiocholanone etiocholanediol allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro covarrun;
-	%do j=1 %to 21 /*15*/;
+	%do j=1 %to 15 /*15*/;
 
-		
-		%do i=1 %to 11 /*13*/;
+		%do i=1 %to 11 /*11*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%covar(yvar=&yvar, xvar=&xvar);
@@ -468,32 +466,27 @@ outcomes at both the between and within-person levels.*/
 
 *[H-1-v] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
 
-/*proc sgplot data=batanaspp; 
-	reg x=BDIm y=zthdoc_3a5bm; 
-	run;
-	
-proc sgplot data=batanaspp; 
-	 vbox thdoc_3a5bm /group=afab;
-	 where thdoc_3a5bm<300;
-	run;	
-	
-	
-	proc sgplot data=batanaspp; 
-	reg x=&xvar.d y=&yvar/group=id; 
-	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
-	title "STATE: Predicting &yvar deviations from &xvar deviations";
-	run;
-	
-proc reg data=batanastrait; 
-model bdim=thdoc_3a5bm ; 
+/*proc sgplot data=batanaspp;
+reg x=BDIm y=zthdoc_3a5bm;
+run;
+
+proc sgplot data=batanaspp;
+vbox thdoc_3a5bm /group=afab;
+where thdoc_3a5bm<300;
+run;
+
+
+proc sgplot data=batanaspp;
+reg x=&xvar.d y=&yvar/group=id;
+reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
+title "STATE: Predicting &yvar deviations from &xvar deviations";
+run;
+
+proc reg data=batanastrait;
+model bdim=thdoc_3a5bm ;
 where thdoc_3a5bm<300;
 run;*/
-	
-	
-	
-
 *[H-2] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
-
 
 /*(Hypothesis 2) To evaluate how differences in neurosteroid change from pre- to
 post-treatment (specified as a L2 trait-like variable, calculated as post
@@ -503,7 +496,6 @@ models. We expect that those with greater increases (or lesser decreases) in
 neurosteroid levels and ratios from pre- to post- treatment will show a
 greater decline in inflammatory markers, neural threat indices, and
 psychiatric symptoms across treatment. */
-
 /*Since reproductive status (particularly pregnancy and luteal phase of the
 menstrual cycle) are known to exponentially increase progesterone levels, and
 since progesterone is the precursor to several GABAergic neuroactive steroids
@@ -524,50 +516,48 @@ covarying levels of progesterone at each visit, represent equally reasonable
 approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
-
-
-
 %macro growth (xvar=, yvar=);
-
 	proc mixed data=batanaspp covtest;
-		class id ;
+		class id;
 		model &yvar=/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select covparms;
 		title "&yvar NULL MODEL";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
-		class id ;
+		class id;
 		model &yvar=scannum/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select covparms;
 		title "&yvar UNCOND GROWTH MODEL";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept &xvar.d/subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
-	
-	/*proc sgplot data=batanaspp; 
-	reg x=z&xvar.m y=z&yvar.m; 
+
+	/*proc sgplot data=batanaspp;
+	reg x=z&xvar.m y=z&yvar.m;
 	title "TRAIT: Predicting &yvar mean from &xvar mean";
 	run;
 	
-	proc sgplot data=batanaspp; 
-	reg x=&xvar.d y=&yvar/group=id; 
+	proc sgplot data=batanaspp;
+	reg x=&xvar.d y=&yvar/group=id;
 	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
 	title "STATE: Predicting &yvar deviations from &xvar deviations";
 	run;*/
@@ -583,7 +573,6 @@ interest, we will engage one of these two strategies. */
 %macro growthrun;
 	%do j=1 %to 15 /*15*/;
 
-		
 		%do i=1 %to 13 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
@@ -594,28 +583,7 @@ interest, we will engage one of these two strategies. */
 
 %growthrun;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* How do they covary*/
-
 %macro covar(xvar=, yvar=);
 	/*options nosource nonotes;
 	ods html5 style=htmlblue
@@ -1132,7 +1100,8 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive behav_wk / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive behav_wk / solution 
+			ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1141,7 +1110,8 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive behav_wk/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive behav_wk/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1150,7 +1120,8 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive TORYTIME / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive TORYTIME / solution 
+			ddfm=kenwardroger2;
 		random intercept TORYTIME/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1159,7 +1130,8 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive TORYTIME/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive TORYTIME/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1205,7 +1177,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk / solution 
+			ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1214,7 +1187,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1223,7 +1197,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME / solution 
+			ddfm=kenwardroger2;
 		random intercept TORYTIME/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1232,7 +1207,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1300,7 +1276,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution 
+			ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1311,7 +1288,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1322,7 +1300,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution 
+			ddfm=kenwardroger2;
 		random intercept torytime /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1333,7 +1312,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1344,7 +1324,8 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) torytime (ref=first) 
 			progestin_iud(ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar - Cross-Level Interaction of &mod, TX, and Categorical Time - Growth Model with a Random Intercept and Time Slope";
@@ -1527,7 +1508,8 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1554,7 +1536,8 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1581,7 +1564,8 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1608,7 +1592,8 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
 		random intercept torytime/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
