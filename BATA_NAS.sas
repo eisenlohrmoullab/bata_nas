@@ -85,7 +85,7 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		OralContraceptive Progestin_IUD BMI_final pcing7 pcing7_SD pcing6 pcing6_SD 
 		L_Amy_cp8 R_Amy_cp8 p4allo p4pregna p4allopregna p5allo p5pregna p5allopregna 
-		scannum lutvsall);
+		scannum lutvsall allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5);
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -103,6 +103,13 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	p5allo=p5/allo;
 	p5pregna=p5/pregna;
 	p5allopregna=p5/(allo+pregna);
+	
+	allop4=allo/p4;
+	p4pregnap4=pregna/p4;
+	allopregnap4=(allo+pregna)/p5;
+	allop5=allo/p5;
+	pregnap5=pregna/p5;
+	allopregnap5=(allo+pregna)/p5;
 
 	/*create reproductive status variable*/
 	lutvsall=.;
@@ -178,10 +185,10 @@ run;
 %let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna;
+		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro savebaselinerun;
-	%do i=1 %to 29;
+	%do i=1 %to 35;
 		%let yvar=%scan(&ylist, &i);
 		%savebaseline(yvar=&yvar);
 	%end;
@@ -240,10 +247,10 @@ run;
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna;
+		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro meansanddevsrun;
-	%do i=1 %to 30;
+	%do i=1 %to 36;
 		%let yvar=%scan(&ylist, &i);
 		%meansanddevs(yvar=&yvar);
 	%end;
@@ -262,7 +269,7 @@ data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m
 		allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
 		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m 
 		pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
-		p5pregnam p5allopregnam);
+		p5pregnam p5allopregnam allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m);
 	set batanastrait;
 	zage=age;
 
@@ -289,6 +296,8 @@ run;
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
+
+
 *[A-1] - Print Between-Person Trait Dataset;
 
 proc print data=batanastrait;
@@ -306,7 +315,8 @@ proc means data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam;
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
+		allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 run;
 
 *[A-4] - Output Histograms for continuous traits;
@@ -315,12 +325,13 @@ proc univariate data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam;
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
+		allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
 		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
 		etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm 
 		L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom p5pregnam 
-		p5allopregnam;
+		p5allopregnam allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	ods select histogram;
 run;
 
@@ -339,7 +350,7 @@ ods graphics on / height=6in;
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna;
+		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro plotovertimerun;
 	%do i=1 %to 30;
@@ -410,30 +421,20 @@ outcomes at both the between and within-person levels.*/
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
 	
-	/*proc sgplot data=batanaspp; 
-	reg x=z&xvar.m y=z&yvar.m; 
-	title "TRAIT: Predicting &yvar mean from &xvar mean";
-	run;
-	
-	proc sgplot data=batanaspp; 
-	reg x=&xvar.d y=&yvar/group=id; 
-	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
-	title "STATE: Predicting &yvar deviations from &xvar deviations";
-	run;*/
 
 %mend;
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna;
+		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro covarrun;
-	%do j=1 %to 15 /*15*/;
+	%do j=1 %to 21 /*15*/;
 
 		
-		%do i=1 %to 13 /*13*/;
+		%do i=1 %to 11 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%covar(yvar=&yvar, xvar=&xvar);
@@ -442,6 +443,32 @@ outcomes at both the between and within-person levels.*/
 %mend;
 
 %covarrun;
+
+*[A-4] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
+
+proc sgplot data=batanaspp; 
+	reg x=BDIm y=zthdoc_3a5bm; 
+	run;
+	
+proc sgplot data=batanaspp; 
+	 vbox thdoc_3a5bm /group=afab;
+	 where thdoc_3a5bm<300;
+	run;	
+	
+	
+	proc sgplot data=batanaspp; 
+	reg x=&xvar.d y=&yvar/group=id; 
+	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
+	title "STATE: Predicting &yvar deviations from &xvar deviations";
+	run;
+	
+proc reg data=batanastrait; 
+model bdim=thdoc_3a5bm ; 
+where thdoc_3a5bm<300;
+run;
+	
+	
+	
 
 *[A-4] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
 
