@@ -85,7 +85,7 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		OralContraceptive Progestin_IUD BMI_final pcing7 pcing7_SD pcing6 pcing6_SD 
 		L_Amy_cp8 R_Amy_cp8 p4allo p4pregna p4allopregna p5allo p5pregna p5allopregna 
-		scannum lutvsall allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5);
+		scannum lutvsall allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5);
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -105,7 +105,7 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	p5allopregna=p5/(allo+pregna);
 	
 	allop4=allo/p4;
-	p4pregnap4=pregna/p4;
+	pregnap4=pregna/p4;
 	allopregnap4=(allo+pregna)/p5;
 	allop5=allo/p5;
 	pregnap5=pregna/p5;
