@@ -335,7 +335,29 @@ proc univariate data=batanastrait;
 	ods select histogram;
 run;
 
-*[A-5] - Within-Person Plots of repeated measures over Time;
+*[A-5] - Correlations Among Continuous Traits;
+
+proc corr data=batanastrait spearman ;
+partial afab age bmim; 
+	var SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
+		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+run;
+
+proc corr data=batanastrait spearman best=10;
+partial afab age bmim; 
+	var p4m allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		 p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m; 
+	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m ;
+run;
+
+
+
+*[A-6] - Within-Person Plots of repeated measures over Time;
 ods graphics on / width=8in;
 ods graphics on / height=6in;
 
@@ -361,7 +383,7 @@ ods graphics on / height=6in;
 
 %plotovertimerun;
 
-*[A-2] - Within-Person Descriptives;
+*[A-7] - Within-Person Descriptives;
 
 /* ADD HERE*/
 proc freq data=batanaspp;
@@ -372,7 +394,7 @@ proc print data=batanaspp;
 	var id scan sex behav_wk lutvsall;
 run;
 
-*[A-3] - HYPOTHESIS 1 TESTS - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
+*[H-1] - HYPOTHESIS 1 TESTS - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
 
 /**/
 
@@ -444,7 +466,7 @@ outcomes at both the between and within-person levels.*/
 
 %covarrun;
 
-*[A-4] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
+*[H-1-v] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
 
 proc sgplot data=batanaspp; 
 	reg x=BDIm y=zthdoc_3a5bm; 
@@ -470,7 +492,7 @@ run;
 	
 	
 
-*[A-4] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
+*[H-2] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
 
 
 /*(Hypothesis 2) To evaluate how differences in neurosteroid change from pre- to
