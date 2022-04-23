@@ -185,7 +185,7 @@ run;
 %let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro savebaselinerun;
 	%do i=1 %to 35;
@@ -247,7 +247,7 @@ run;
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro meansanddevsrun;
 	%do i=1 %to 36;
@@ -269,7 +269,7 @@ data batanastrait (keep=id zbmi bmim age zage afab tx SHAPSm BAIm BDIm PSSm p4m
 		allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
 		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m 
 		pcing6_SDm L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
-		p5pregnam p5allopregnam allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m);
+		p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m);
 	set batanastrait;
 	zage=age;
 
@@ -316,7 +316,7 @@ proc means data=batanastrait;
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
 		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 run;
 
 *[A-4] - Output Histograms for continuous traits;
@@ -326,12 +326,12 @@ proc univariate data=batanastrait;
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm L_Amy_cp8m R_Amy_cp8m 
 		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam
-		allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
 		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
 		etiocholanediolm CRPm IL6m TNFam pcing7m pcing7_SDm pcing6m pcing6_SDm 
 		L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom p5pregnam 
-		p5allopregnam allop4m p4pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	ods select histogram;
 run;
 
@@ -350,7 +350,7 @@ ods graphics on / height=6in;
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8 p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro plotovertimerun;
 	%do i=1 %to 30;
@@ -426,7 +426,7 @@ outcomes at both the between and within-person levels.*/
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna allop4 p4pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+		p4allopregna p5allo p5pregna p5allopregna allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
