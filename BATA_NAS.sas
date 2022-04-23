@@ -468,7 +468,7 @@ outcomes at both the between and within-person levels.*/
 
 *[H-1-v] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
 
-proc sgplot data=batanaspp; 
+/*proc sgplot data=batanaspp; 
 	reg x=BDIm y=zthdoc_3a5bm; 
 	run;
 	
@@ -487,7 +487,7 @@ proc sgplot data=batanaspp;
 proc reg data=batanastrait; 
 model bdim=thdoc_3a5bm ; 
 where thdoc_3a5bm<300;
-run;
+run;*/
 	
 	
 	
@@ -527,7 +527,7 @@ interest, we will engage one of these two strategies. */
 
 
 
-%macro TEMPLATE TO EDIT NO CHANGES YET (xvar=, yvar=);
+%macro growth (xvar=, yvar=);
 
 	proc mixed data=batanaspp covtest;
 		class id ;
@@ -580,19 +580,19 @@ interest, we will engage one of these two strategies. */
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
 
-%macro covarrun;
+%macro growthrun;
 	%do j=1 %to 15 /*15*/;
 
 		
 		%do i=1 %to 13 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
-			%covar(yvar=&yvar, xvar=&xvar);
+			%growth(yvar=&yvar, xvar=&xvar);
 		%end;
 	%end;
 %mend;
 
-%covarrun;
+%growthrun;
 
 
 
