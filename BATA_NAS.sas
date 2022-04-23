@@ -366,6 +366,16 @@ ods graphics on / width=8in;
 ods graphics on / height=6in;
 
 %macro plotovertime (yvar=);
+
+proc mixed data=batanaspp covtest;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum / solution 
+			ddfm=kenwardroger2;
+		random intercept scannum/subject=id type=vc;
+		ods select Nobs ConvergenceStatus covparms solutionf;
+		title "Does &yvar change over time?";
+	run;
+	
 	proc sgplot data=batanaspp;
 		xaxis integer;
 		series x=scannum y=&yvar/ group=id markers;
@@ -516,36 +526,35 @@ covarying levels of progesterone at each visit, represent equally reasonable
 approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
+
 %macro growth (xvar=, yvar=);
 	proc mixed data=batanaspp covtest;
-		class id;
-		model &yvar=/ solution ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
 		random intercept /subject=id type=vc;
 		ods select covparms;
 		title "&yvar NULL MODEL";
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id;
-		model &yvar=scannum/ solution ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution; 
 		random intercept /subject=id type=vc;
 		ods select covparms;
 		title "&yvar UNCOND GROWTH MODEL";
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
-		random intercept &xvar.d/subject=id type=vc;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
+		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
