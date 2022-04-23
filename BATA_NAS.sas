@@ -361,9 +361,10 @@ proc print data=batanaspp;
 	var id scan sex behav_wk lutvsall;
 run;
 
-*[A-3] - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
+*[A-3] - HYPOTHESIS 1 TESTS - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
 
 /**/
+
 /*FROM PREREG: (1) To evaluate the relative contributions of trait- and state-level variance
 in neuroactive steroids in predicting inflammatory markers, neural indices of
 threat activation, and symptoms, a series of multilevel models (with
@@ -375,28 +376,27 @@ neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 
 
-
-proc mixed data=batanaspp covtest;
-		class id lutvsall (ref=first);
-		model shaps= lutvsall/ solution ddfm=kr;
-		random intercept /subject=id type=vc;
-		
-		title " SHAPS COV PARMS";
-	run;
-
 %macro covar(xvar=, yvar=);
 
 	proc mixed data=batanaspp covtest;
 		class id ;
-		model &yvar=/ solution ddfm=kr;
+		model &yvar=/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select covparms;
-		title " &yvar COV PARMS";
+		title "&yvar NULL MODEL";
+	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id ;
+		model &yvar= scannum/ solution ddfm=kenwardroger2;
+		random intercept scannum/subject=id type=vc;
+		ods select covparms solutionf;
+		title "&yvar UNCOND GROWTH MODEL";
 	run;
 	
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept &xvar.d/subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
@@ -404,7 +404,7 @@ proc mixed data=batanaspp covtest;
 	
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) lutvsall (ref=first);
-		model &yvar=zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
@@ -430,10 +430,10 @@ proc mixed data=batanaspp covtest;
 		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
 
 %macro covarrun;
-	%do j=1 %to 1 /*15*/;
+	%do j=1 %to 15 /*15*/;
 
 		
-		%do i=1 %to 1 /*13*/;
+		%do i=1 %to 13 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%covar(yvar=&yvar, xvar=&xvar);
@@ -443,7 +443,130 @@ proc mixed data=batanaspp covtest;
 
 %covarrun;
 
+*[A-4] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
+
+
+/*(Hypothesis 2) To evaluate how differences in neurosteroid change from pre- to
+post-treatment (specified as a L2 trait-like variable, calculated as post
+minus pre) MODERATE the trajectory of other outcomes across the
+trial (neurosteroid change score * time), we will utilize multilevel growth
+models. We expect that those with greater increases (or lesser decreases) in
+neurosteroid levels and ratios from pre- to post- treatment will show a
+greater decline in inflammatory markers, neural threat indices, and
+psychiatric symptoms across treatment. */
+
+/*Since reproductive status (particularly pregnancy and luteal phase of the
+menstrual cycle) are known to exponentially increase progesterone levels, and
+since progesterone is the precursor to several GABAergic neuroactive steroids
+of interest in the present study, we did pre-evaluate the impact of
+reproductive status on progesterone in order to derive a meaningful covariate
+for use in analyses. We first created a categorical "reproductive status"
+variable including the following options: male sex, combined oral
+contraceptive-using female, LNG-IUD-using female, post-menopausal female,
+naturally cycling female in the follicular phase of the menstrual cycle, and
+naturally cycling female in the luteal phase of the menstrual cycle. Next, we
+ran ANOVA models to examine which categories differed significantly from one
+another. Results yielded a very clear picture in which Naturally-Cycling
+Luteal Phase Females had significantly higher levels of progesterone than all
+other categories, and no other pairwise differences emerged. Visual inspection
+of data suggested that either (1) binary classification at the observation
+level for luteal phase status (vs. all other reproductive statuses) or (2)
+covarying levels of progesterone at each visit, represent equally reasonable
+approaches to removing variance associated with the menstrual cycle in our
+primary models. Therefore, depending on appropriateness for our outcome of
+interest, we will engage one of these two strategies. */
+
+
+
+%macro TEMPLATE TO EDIT NO CHANGES YET (xvar=, yvar=);
+
+	proc mixed data=batanaspp covtest;
+		class id ;
+		model &yvar=/ solution ddfm=kenwardroger2;
+		random intercept /subject=id type=vc;
+		ods select covparms;
+		title "&yvar NULL MODEL";
+	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id ;
+		model &yvar=scannum/ solution ddfm=kenwardroger2;
+		random intercept /subject=id type=vc;
+		ods select covparms;
+		title "&yvar UNCOND GROWTH MODEL";
+	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id afab (ref=first) lutvsall (ref=first);
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		random intercept &xvar.d/subject=id type=vc;
+		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
+	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id afab (ref=first) lutvsall (ref=first);
+		model &yvar=scannum zbmi afab zage lutvsall z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
+		random intercept /subject=id type=vc;
+		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
+	run;
+	
+	/*proc sgplot data=batanaspp; 
+	reg x=z&xvar.m y=z&yvar.m; 
+	title "TRAIT: Predicting &yvar mean from &xvar mean";
+	run;
+	
+	proc sgplot data=batanaspp; 
+	reg x=&xvar.d y=&yvar/group=id; 
+	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
+	title "STATE: Predicting &yvar deviations from &xvar deviations";
+	run;*/
+
+%mend;
+
+%let xlist= allo pregna p5 thdoc thdoc_3a5b 
+		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
+		p4allopregna p5allo p5pregna p5allopregna;
+%let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
+		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
+
+%macro covarrun;
+	%do j=1 %to 15 /*15*/;
+
+		
+		%do i=1 %to 13 /*13*/;
+			%let yvar=%scan(&ylist, &i);
+			%let xvar=%scan(&xlist, &j);
+			%covar(yvar=&yvar, xvar=&xvar);
+		%end;
+	%end;
+%mend;
+
+%covarrun;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* How do they covary*/
+
 %macro covar(xvar=, yvar=);
 	/*options nosource nonotes;
 	ods html5 style=htmlblue
@@ -453,7 +576,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive z&xvar.m &xvar.d/ solution 
-			ddfm=kr;
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -467,7 +590,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx behav_wk z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -481,7 +604,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -495,7 +618,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept &xvar.d/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -509,7 +632,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx TORYTIME z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -523,7 +646,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -537,7 +660,7 @@ proc mixed data=batanaspp covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME z&xvar.m &xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept &xvar.d/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -960,7 +1083,7 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive behav_wk / solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and Random Time Slope";
@@ -969,7 +1092,7 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive behav_wk/ solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive behav_wk/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -978,7 +1101,7 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive TORYTIME / solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive TORYTIME / solution ddfm=kenwardroger2;
 		random intercept TORYTIME/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and Random Time Slope";
@@ -987,7 +1110,7 @@ cuerew_c12_BL PwSN_BL PwFPN_BL PwDMN_BL PwRew_BL;
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive TORYTIME/ solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive TORYTIME/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1033,7 +1156,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk / solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1042,7 +1165,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk/ solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive tx|behav_wk/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over BEHAV_WK -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1051,7 +1174,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME / solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME / solution ddfm=kenwardroger2;
 		random intercept TORYTIME/subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and Random Time Slope";
@@ -1060,7 +1183,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME/ solution ddfm=kr;
+		model &yvar=female zage zbmi oralcontraceptive tx|TORYTIME/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar over TORYTIME -  Growth Model with a Random Intercept and FIXED Time Slope";
@@ -1128,7 +1251,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1139,7 +1262,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk z&mod|tx|behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1150,7 +1273,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kenwardroger2;
 		random intercept torytime /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1161,7 +1284,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime / solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1172,7 +1295,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) torytime (ref=first) 
 			progestin_iud(ref=first);
-		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime z&mod|tx|torytime/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar - Cross-Level Interaction of &mod, TX, and Categorical Time - Growth Model with a Random Intercept and Time Slope";
@@ -1181,7 +1304,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx z&mod|behav_wk / solution ddfm=kr;
+		model &yvar=female zage zbmi tx z&mod|behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar - PARED DOWN MODEL WITH JUST &mod x behav_wk";
@@ -1191,7 +1314,7 @@ shaps_behav shaps_scan bdi lgbai pss decentering curiosity  pcing lamy ramy cuer
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=female zage zbmi oralcontraceptive tx z&mod|torytime / solution 
-			ddfm=kr;
+			ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 		ods select Nobs fitstatistics covparms solutionf;
 		title "Predicting &yvar - PARED DOWN MODEL WITH JUST &mod x torytime";
@@ -1232,7 +1355,7 @@ emoneg physabuse physneg sexabuse  age ;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=sex zage zctqtot_mean|z&xvar.m zctqtot_mean|&xvar.d/ solution 
-			ddfm=kr;
+			ddfm=kenwardroger2;
 		random intercept/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1247,7 +1370,7 @@ emoneg physabuse physneg sexabuse  age ;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=sex zage tx behav_wk zctqtot_mean|z&xvar.m zctqtot_mean|&xvar.d / 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1261,7 +1384,7 @@ emoneg physabuse physneg sexabuse  age ;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=sex zage tx|behav_wk zctqtot_mean|z&xvar.m zctqtot_mean|&xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1275,7 +1398,7 @@ emoneg physabuse physneg sexabuse  age ;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=sex zage tx TORYTIME zctqtot_mean|z&xvar.m zctqtot_mean|&xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1289,7 +1412,7 @@ emoneg physabuse physneg sexabuse  age ;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
 		model &yvar=sex zage tx|TORYTIME zctqtot_mean|z&xvar.m zctqtot_mean|&xvar.d/ 
-			solution ddfm=kr;
+			solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1341,7 +1464,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1355,7 +1478,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1368,7 +1491,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk/ solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1382,7 +1505,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|behav_wk &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1395,7 +1518,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1409,7 +1532,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept /subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1422,7 +1545,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime/ solution ddfm=kenwardroger2;
 		random intercept torytime/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
@@ -1436,7 +1559,7 @@ cuerew_c12 PwSN PwFPN PwDMN PwRew shaps_behav shaps_scan bdi bai lgbai pss pswq 
 	proc mixed data=bata_p_pp_olrem covtest;
 		class subject_id tx (ref="MBCT") female (ref=first) progestin_iud (ref=first) 
 			oralcontraceptive (ref=first);
-		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kr;
+		model &yvar=female zage zbmi tx|torytime &xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept torytime/subject=subject_id type=vc;
 
 		/*repeated /subject=subject_id type=ar(1)*/
