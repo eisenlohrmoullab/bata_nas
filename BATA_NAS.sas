@@ -346,6 +346,9 @@ run;
 		if zslopepr&yvar>2.5 then zslopepr&yvar=.; 
 			if -2.5>zslopepr&yvar then slopepr&yvar=.; 
 		if zslopepr&yvar>2.5 then slopepr&yvar=.; 
+		shapsresponder=.; 
+		if zslopeprshaps>0 then shapsresponder=0;
+				if zslopeprshaps<0 then shapsresponder=1;
 		run;
 
 %mend;
@@ -527,6 +530,7 @@ ods graphics on / height=6in;
 		title "Removing Luteal Observations";
 	run;
 
+
 %mend;
 
 %let ylist= bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
@@ -652,21 +656,21 @@ primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
 
 proc print data=batanastrait; 
-var afab  natcyc bmim zage;
+var afab natcyc bmim zage;
 run;
+
+		
 
 proc corr data=batanastrait spearman best=10 plots=scatter;
 	partial afab natcyc bmim age;
 	var slopeprallo slopeprpregna slopeprp5 /*slopeprthdoc slopeprthdoc_3a5b*/ 
 		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
 	 slopepretiocholanediol slopeprcrp 
-		slopepril6 /*slopeprtnfa slopeprpcing7 */
-		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
-
-		/*intprallop4 slopeprallop4
+		slopepril6 slopeprtnfa slopeprpcing7 
+		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8 /*intprallop4 slopeprallop4*/
 		 slopeprpregnap4  slopeprallopregnap4 
 		 slopeprallop5  slopeprpregnap5  
-		slopeprallopregnap5*/;
+		slopeprallopregnap5;
 	with slopeprshaps slopeprbdi slopeprpss ;
 run;
 
