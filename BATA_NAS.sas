@@ -724,54 +724,26 @@ run;
 
 %macro growth (xvar=, yvar=);
 
-
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal slopepretiocholanone slopepretiocholanone*behav_wk/ solution;
+		model &yvar=behav_wk zbmi afab natcyc zage luteal slopepr&xvar slopepr&xvar*behav_wk/ solution;
 		random intercept behav_wk/subject=id type=vc;
 		ods select covparms solutionf;
-		title "&yvar - no random slopes";
+		title "SLOPE of &xvar * TIME = &yvar";
 	run;
-
-	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
-		random intercept /subject=id type=vc;
-		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
-		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
-	run;
-
-	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
-		random intercept /subject=id type=vc;
-		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
-		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
-	run;
-
-	/*proc sgplot data=batanaspp;
-	reg x=z&xvar.m y=z&yvar.m;
-	title "TRAIT: Predicting &yvar mean from &xvar mean";
-	run;
-	
-	proc sgplot data=batanaspp;
-	reg x=&xvar.d y=&yvar/group=id;
-	reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
-	title "STATE: Predicting &yvar deviations from &xvar deviations";
-	run;*/
 
 %mend;
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol p4allo p4pregna 
-		p4allopregna p5allo p5pregna p5allopregna;
+		androsterone androstanediol etiocholanone etiocholanediol allop4 
+		pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa 
-		pcing7 pcing7_SD pcing6 pcing6_SD L_Amy_cp8 R_Amy_cp8;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro growthrun;
 	%do j=1 %to 15 /*15*/;
 
-		%do i=1 %to 13 /*13*/;
+		%do i=1 %to 11 /*13*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%growth(yvar=&yvar, xvar=&xvar);
