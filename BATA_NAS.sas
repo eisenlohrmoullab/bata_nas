@@ -231,12 +231,12 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 
 %mend;
 
-%let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= luteal bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
 
 %macro meansanddevsrun;
-	%do i=1 %to 27;
+	%do i=1 %to 29;
 		%let yvar=%scan(&ylist, &i);
 		%meansanddevs(yvar=&yvar);
 	%end;
@@ -297,7 +297,7 @@ run;
 %macro savetraj (yvar=);
 	proc mixed data=batanaspp covtest;
 		class id;
-		model &yvar=afab natcyc luteal zP4m P4d behav_wk / solution;
+		model &yvar= luteal zP4m P4d behav_wk / solution;
 		random intercept behav_wk/subject=id s;
 		ods output solutionR=resp4timeest&yvar; 
 	run;
@@ -367,6 +367,8 @@ run;
 data batanastrait;
 	merge batanastrait estimates;
 	by id;
+	if id=. then
+		delete;
 run;
 
 
@@ -555,7 +557,7 @@ outcomes at both the between and within-person levels.*/
 /*Printing Scan Days Dataset to see  Missing Values*/
 
 proc print data=batanaspp;
-	var id scannum zbmi afab natcyc zage luteal shaps allo pregna p5 thdoc 
+	var id scannum zbmi bmim afab natcyc zage luteal shaps allo pregna p5 thdoc 
 		thdoc_3a5b androsterone androstanediol etiocholanone etiocholanediol allop4 
 		pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 SHAPS BAI BDI PSS CRP IL6 
 		TNFa pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
@@ -573,15 +575,15 @@ run;
 
 proc mixed data=batanaspp covtest;
 class id;
-model &yvar=scannum/ solution ddfm=kenwardroger2;
-random intercept scannum/subject=id type=vc;
+model &yvar=behav_wk/ solution ddfm=kenwardroger2;
+random intercept behav_wk/subject=id type=vc;
 ods select covparms solutionf;
 title "&yvar UNCOND GROWTH MODEL";
 run;
 
 proc mixed data=batanaspp covtest;
 class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution
+model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution
 ddfm=kenwardroger2;
 random intercept &xvar.d/subject=id type=vc;
 ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
@@ -590,7 +592,7 @@ run;
 
 proc mixed data=batanaspp covtest;
 class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution
+model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution
 ddfm=kenwardroger2;
 random intercept /subject=id type=vc;
 ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
@@ -616,34 +618,6 @@ pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 %covarrun;
 
 *[H-1-v] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
-
-proc sgplot data=batanaspp;
-reg x=BDIm y=zthdoc_3a5bm;
-run;
-
-proc sgplot data=batanaspp;
-vbox thdoc_3a5bm /group=afab;
-where thdoc_3a5bm<300;
-run;
-
-
-
-proc sgplot data=batanastrait;
-reg x=slopeprBDI y=slopepretiocholanone/group=id;
-reg x=slopeprBDI y=slopepretiocholanone/lineattrs=(color=black thickness=5);
-title "STATE: Predicting BDI deviations from etiocholanone deviations";
-run;
-
-proc sgpanel data=batanaspp;
-panelby afab;
-reg x=behav_wk y=etiocholanone/ group=id;
-run;
-
-
-proc sgpanel data=batanaspp;
-panelby afab;
-reg x=behav_wk y=etiocholanoned/ group=id;
-run;
 
 
 *[H-2] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
@@ -677,20 +651,22 @@ approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
 
-
+proc print data=batanastrait; 
+var afab  natcyc bmim zage;
+run;
 
 proc corr data=batanastrait spearman best=10 plots=scatter;
-
-	var slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
+	partial afab natcyc bmim age;
+	var slopeprallo slopeprpregna slopeprp5 /*slopeprthdoc slopeprthdoc_3a5b*/ 
 		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
 	 slopepretiocholanediol slopeprcrp 
-		slopepril6 slopeprtnfa slopeprpcing7 
+		slopepril6 /*slopeprtnfa slopeprpcing7 */
 		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
 
-		/*intprallop4 slopeprallop4*/
+		/*intprallop4 slopeprallop4
 		 slopeprpregnap4  slopeprallopregnap4 
 		 slopeprallop5  slopeprpregnap5  
-		slopeprallopregnap5;
+		slopeprallopregnap5*/;
 	with slopeprshaps slopeprbdi slopeprpss ;
 run;
 
@@ -698,7 +674,7 @@ run;
 /*Bio Predictors of Cytokines*/
 
 proc corr data=batanastrait spearman best=10;
-	partial afab natcyc age bmim;
+	partial afab natcyc bmim age;
 	var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
 		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
 	 slopepretiocholanediol slopeprpcing7 
