@@ -305,7 +305,7 @@ run;
 %macro savetraj (yvar=);
 	proc mixed data=batanaspp covtest;
 		class id;
-		model &yvar=P4 behav_wk / solution;
+		model &yvar=afab natcyc luteal P4 behav_wk / solution;
 		random intercept behav_wk/subject=id s;
 		ods output solutionR=resp4timeest&yvar;
 	run;
@@ -457,7 +457,7 @@ proc corr data=batanastrait spearman best=10;
 run;
 
 
-proc corr data=batanastrait spearman best=10;
+proc corr data=batanastrait spearman best=20;
 	/*partial afab natcyc age bmim;*/
 	var afab bmim natcyc age intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
 		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
