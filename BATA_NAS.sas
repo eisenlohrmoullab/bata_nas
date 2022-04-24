@@ -457,20 +457,6 @@ proc corr data=batanastrait spearman best=10;
 run;
 
 
-proc corr data=batanastrait spearman best=10;
-	/*partial afab natcyc age bmim;*/
-	var afab bmim natcyc age intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
-		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 intprallop4 
-		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
-		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
-		intprallopregnap5 slopeprallopregnap5;
-run;
 
 
 
@@ -662,6 +648,31 @@ covarying levels of progesterone at each visit, represent equally reasonable
 approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
+
+
+proc corr data=batanastrait spearman best=10;
+	/*partial afab natcyc age bmim;*/
+	var afab bmim natcyc age intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
+		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
+		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
+		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
+		intpretiocholanone slopepretiocholanone intpretiocholanediol 
+		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
+		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
+		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 intprallop4 
+		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
+		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
+		intprallopregnap5 slopeprallopregnap5;
+run;
+
+
+
+
+
+
+
+
+
 %macro growth (xvar=, yvar=);
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
