@@ -679,8 +679,22 @@ interest, we will engage one of these two strategies. */
 
 proc corr data=batanastrait spearman best=10;
 	partial afab natcyc age bmim;
-	var slopeprshaps slopeprbdi slopeprpss;
-	with slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
+	var slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
+		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
+	 slopepretiocholanediol slopeprcrp 
+		slopepril6 slopeprtnfa slopeprpcing7 
+		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
+
+		/*intprallop4 slopeprallop4*/
+		 slopeprpregnap4  slopeprallopregnap4 
+		 slopeprallop5  slopeprpregnap5  
+		slopeprallopregnap5;
+	with slopeprshaps slopeprbdi slopeprpss ;
+run;
+
+proc corr data=batanastrait spearman ;
+	partial afab natcyc age bmim;
+	var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
 		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
 	 slopepretiocholanediol slopeprcrp 
 		slopepril6 slopeprtnfa slopeprpcing7 
@@ -722,6 +736,21 @@ run;
 proc reg data=batanastrait; 
 model slopeprbdi=natcyc slopepretiocholanone; 
 where slopepretiocholanone<2.5;
+run; 
+
+
+proc ttest data=batanastrait; 
+class afab;
+var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
+		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
+	 slopepretiocholanediol slopeprcrp 
+		slopepril6 slopeprtnfa slopeprpcing7 
+		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
+
+		/*intprallop4 slopeprallop4*/
+		 slopeprpregnap4  slopeprallopregnap4 
+		 slopeprallop5  slopeprpregnap5  
+		slopeprallopregnap5; 
 run; 
 
 %macro growth (xvar=, yvar=);
