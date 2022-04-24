@@ -89,6 +89,14 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
+	/*Sets two observations to missing - one at ~2k, one at ~10k*/
+	if allo>1000 then
+		allo=.;
+
+	/*Sets one observation to missing - one at ~400*/
+	if thdoc>350 then
+		thdoc=.;
+
 	/*Rename variables*/
 	id=(substrn(Subject_id, length(subject_id)-3, 4))*1;
 	*converts subject_id to numeric value;
@@ -128,21 +136,6 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	/* Deletes cases with no id number*/
 	if id=. then
 		delete;
-run;
-
-*[D-10.5] REMOVE OBVIOUS OUTLIERS;
-
-data batanaspp;
-	set batanaspp;
-
-	if allo>1000 then
-		allo=.;
-
-	/*Sets two observations to missing - one at ~2k, one at ~10k*/
-	if thdoc>350 then
-		thdoc=.;
-
-	/*Sets one observation to missing - one at ~400*/
 run;
 
 *[D-11] Eliminate Duplicate Cases;
@@ -305,7 +298,7 @@ run;
 %macro savetraj (yvar=);
 	proc mixed data=batanaspp covtest;
 		class id;
-		model &yvar=P4 behav_wk / solution;
+		model &yvar=afab natcyc luteal P4 behav_wk / solution;
 		random intercept behav_wk/subject=id s;
 		ods output solutionR=resp4timeest&yvar;
 	run;
@@ -371,13 +364,11 @@ run;
 
 %savetrajrun;
 
-
-/* Merge estimates into trait dataset */ 
-
-data batanastrait; 
-merge batanastrait estimates; 
-by id; 
-run; 
+/* Merge estimates into trait dataset */
+data batanastrait;
+	merge batanastrait estimates;
+	by id;
+run;
 
 /************************************************************/
 /*END DATA PREP*/
@@ -406,9 +397,9 @@ run;
 *[A-3.5] - Output Means for Estimates;
 
 proc means data=estimates;
-	var intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
-		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
+	var intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss 
+		slopeprpss intprallo slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 
+		intprthdoc slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
 		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
 		intpretiocholanone slopepretiocholanone intpretiocholanediol 
 		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
@@ -416,7 +407,7 @@ proc means data=estimates;
 		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 intprallop4 
 		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
 		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
-		intprallopregnap5 slopeprallopregnap4;
+		intprallopregnap5 slopeprallopregnap5;
 run;
 
 *[A-4] - Output Histograms for continuous traits;
@@ -424,14 +415,37 @@ run;
 proc univariate data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
-		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam 
-		p4allopregnam p5allom p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m 
-		allop5m pregnap5m allopregnap5m;
+		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m 
+		allopregnap4m allop5m pregnap5m allopregnap5m intprshaps slopeprshaps 
+		intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
+		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
+		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
+		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
+		intpretiocholanone slopepretiocholanone intpretiocholanediol 
+		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
+		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
+		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 /*intprallop4
+		slopeprallop4*/
+		intprpregnap4 slopeprpregnap4 intprallopregnap4 slopeprallopregnap4 
+		intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 intprallopregnap5 
+		slopeprallopregnap5;
 	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
 		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
 		etiocholanediolm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m 
-		p4allom p4pregnam p4allopregnam p5allom p5pregnam p5allopregnam allop4m 
-		pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m intprshaps 
+		slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss 
+		intprallo slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
+		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
+		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
+		intpretiocholanone slopepretiocholanone intpretiocholanediol 
+		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
+		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
+		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 
+		/*intprallop4
+		slopeprallop4*/
+		intprpregnap4 slopeprpregnap4 intprallopregnap4 slopeprallopregnap4 
+		intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 intprallopregnap5 
+		slopeprallopregnap5;
 	ods select histogram;
 run;
 
@@ -443,7 +457,17 @@ proc corr data=batanastrait spearman;
 		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
 		pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
 		p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m 
-		allopregnap5m;
+		allopregnap5m intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi 
+		intprpss slopeprpss intprallo slopeprallo intprpregna slopeprpregna intprp5 
+		slopeprp5 intprthdoc slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b 
+		intprandrosterone slopeprandrosterone intprandrostanediol 
+		slopeprandrostanediol intpretiocholanone slopepretiocholanone 
+		intpretiocholanediol slopepretiocholanediol intprcrp slopeprcrp intpril6 
+		slopepril6 intprtnfa slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 
+		slopeprpcing6 intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 
+		intprallop4 slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
+		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
+		intprallopregnap5 slopeprallopregnap5;
 run;
 
 proc corr data=batanastrait spearman best=10;
@@ -456,9 +480,20 @@ proc corr data=batanastrait spearman best=10;
 		R_Amy_cp8m;
 run;
 
+proc corr data=batanastrait spearman best=10;
+	partial afab natcyc age bmim;
+	var slopeprshaps slopeprbdi slopeprpss;
+	with slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
+		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
+	 slopepretiocholanediol slopeprcrp 
+		slopepril6 slopeprtnfa slopeprpcing7 
+		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
 
-
-
+		/*intprallop4 slopeprallop4*/
+		 slopeprpregnap4  slopeprallopregnap4 
+		 slopeprallop5  slopeprpregnap5  
+		slopeprallopregnap5;
+run;
 
 *[A-6] - Within-Person Descriptives;
 
@@ -473,7 +508,7 @@ ods graphics on / height=6in;
 %macro plotovertime (yvar=);
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=scannum / solution ddfm=kenwardroger2;
+		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept scannum/subject=id type=vc;
 		ods select Nobs ConvergenceStatus covparms solutionf;
 		title "Does &yvar change over time?";
@@ -481,25 +516,25 @@ ods graphics on / height=6in;
 
 	proc sgplot data=batanaspp;
 		xaxis integer;
-		series x=scannum y=&yvar/ group=id markers;
+		series x=behav_wk y=&yvar/ group=id markers;
 	run;
 
 	proc sgpanel data=batanaspp;
 		panelby afab;
 		colaxis integer;
-		series x=scannum y=&yvar/ group=id markers;
+		series x=behav_wk y=&yvar/ group=id markers;
 	run;
 
 	proc sgpanel data=batanaspp;
 		panelby natcyc;
 		colaxis integer;
-		series x=scannum y=&yvar/ group=id markers;
+		series x=behav_wk y=&yvar/ group=id markers;
 	run;
 
 	proc sgpanel data=batanaspp;
 		panelby natcyc;
 		colaxis integer;
-		series x=scannum y=&yvar/ group=id markers;
+		series x=behav_wk y=&yvar/ group=id markers;
 		where luteal ne 1;
 		title "Removing Luteal Observations";
 	run;
@@ -518,6 +553,7 @@ ods graphics on / height=6in;
 %mend;
 
 %plotovertimerun;
+
 *[H-1] - HYPOTHESIS 1 TESTS - Models Examining Between- and Within-Person Associations of NAS with other repeated measures;
 
 /**/
@@ -531,6 +567,7 @@ variability in neurosteroids on each outcome. We predict that higher levels of
 neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 /*Printing Scan Days Dataset to see  Missing Values*/
+
 proc print data=batanaspp;
 	var id scannum zbmi afab natcyc zage luteal shaps allo pregna p5 thdoc 
 		thdoc_3a5b androsterone androstanediol etiocholanone etiocholanediol allop4 
@@ -538,11 +575,6 @@ proc print data=batanaspp;
 		TNFa pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 	where scannum ne .;
 run;
-
-/*
-
-
-
 
 %macro covar(xvar=, yvar=);
 proc mixed data=batanaspp covtest;
@@ -596,9 +628,10 @@ pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 %end;
 %mend;
 %covarrun;
+
 *[H-1-v] - VISUALIZATION OF HYPOTHESIS 1 TESTS - between-person graphs;
 
-/*proc sgplot data=batanaspp;
+proc sgplot data=batanaspp;
 reg x=BDIm y=zthdoc_3a5bm;
 run;
 
@@ -608,16 +641,25 @@ where thdoc_3a5bm<300;
 run;
 
 
-proc sgplot data=batanaspp;
-reg x=&xvar.d y=&yvar/group=id;
-reg x=&xvar.d y=&yvar/lineattrs=(color=black thickness=5);
-title "STATE: Predicting &yvar deviations from &xvar deviations";
+
+proc sgplot data=batanastrait;
+reg x=slopeprBDI y=slopepretiocholanone/group=id;
+reg x=slopeprBDI y=slopepretiocholanone/lineattrs=(color=black thickness=5);
+title "STATE: Predicting BDI deviations from etiocholanone deviations";
 run;
 
-proc reg data=batanastrait;
-model bdim=thdoc_3a5bm ;
-where thdoc_3a5bm<300;
-run;*/
+proc sgpanel data=batanaspp;
+panelby afab;
+reg x=behav_wk y=etiocholanone/ group=id;
+run;
+
+
+proc sgpanel data=batanaspp;
+panelby afab;
+reg x=behav_wk y=etiocholanoned/ group=id;
+run;
+
+
 *[H-2] - HYPOTHESIS 2 TESTS - INSERT DESCRIPTION HERE;
 
 /*(Hypothesis 2) To evaluate how differences in neurosteroid change from pre- to
@@ -649,50 +691,51 @@ approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
 
-
-proc corr data=batanastrait spearman best=10;
-	/*partial afab natcyc age bmim;*/
-	var afab bmim natcyc age intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
-		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 intprallop4 
-		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
-		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
-		intprallopregnap5 slopeprallopregnap5;
+data batanaspp; 
+merge batanaspp batanastrait;
+by id;  
+etioinc=.;
+if slopepretiocholanone>0 then etioinc=1; 
+if slopepretiocholanone<0 then etioinc=0; 
 run;
+	
+	proc mixed data=batanaspp covtest;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		model BDI=behav_wk zbmi afab natcyc zage luteal slopepretiocholanone slopepretiocholanone*behav_wk/ solution;
+		random intercept behav_wk/subject=id type=vc;
+		ods select covparms solutionf;
+		title "BDI - with random slopes";
+	run;
+	
+	
+proc sgplot data=batanaspp;  
+reg x=behav_wk y=bdi/group=etioinc degree=2; 
+run; 
+	
 
-
-
-
-
-
-
-
+proc sgplot data=batanaspp;  
+reg x=slopepretiocholanone y=slopeprbdi; 
+run; 
+	
+proc reg data=batanastrait; 
+model slopeprbdi=natcyc slopepretiocholanone; 
+where slopepretiocholanone<2.5;
+run; 
 
 %macro growth (xvar=, yvar=);
+
+
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
-		random intercept /subject=id type=vc;
-		ods select covparms;
-		title "&yvar NULL MODEL";
+		model &yvar=behav_wk zbmi afab natcyc zage luteal slopepretiocholanone slopepretiocholanone*behav_wk/ solution;
+		random intercept behav_wk/subject=id type=vc;
+		ods select covparms solutionf;
+		title "&yvar - no random slopes";
 	run;
 
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
-		random intercept /subject=id type=vc;
-		ods select covparms;
-		title "&yvar UNCOND GROWTH MODEL";
-	run;
-
-	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
+		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
@@ -700,7 +743,7 @@ run;
 
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=scannum zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
+		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
 		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
@@ -739,6 +782,7 @@ run;
 %growthrun;
 
 /* How do they covary*/
+
 %macro covar(xvar=, yvar=);
 	/*options nosource nonotes;
 	ods html5 style=htmlblue
