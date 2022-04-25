@@ -138,8 +138,8 @@ run;
 	
 	data batanaspp; 
 	set batanaspp; 
-	if z&yvar >=2.5 then &yvar=.;
-	if z&yvar <=-2.5 then &yvar=.;
+	if z&yvar >=3 then &yvar=.;
+	if z&yvar <=-3 then &yvar=.;
 	run;
 
 %mend;
@@ -252,7 +252,7 @@ run;
 
 *[D-15] Saving smaller dataset and creating zbmi and zage;
 
-data batanastrait (keep=id natcyc zbmi bmim age zage afab tx SHAPSm BAIm BDIm 
+data batanastrait (keep=id natcyc zbmi bmim OralContraceptive Progestin_IUD age zage afab tx SHAPSm BAIm BDIm 
 		PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm androsteronem androstanediolm 
 		etiocholanonem etiocholanediolm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
 		R_Amy_cp8m allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m);
@@ -341,14 +341,10 @@ run;
 	/* REMOVE outlier slope estimates (outside of 3 SDs) */
 	data estimates; 
 	set estimates; 
-	
-		if -2.5>zslopepr&yvar then zslopepr&yvar=.; 
-		if zslopepr&yvar>2.5 then zslopepr&yvar=.; 
-			if -2.5>zslopepr&yvar then slopepr&yvar=.; 
-		if zslopepr&yvar>2.5 then slopepr&yvar=.; 
-		shapsresponder=.; 
-		if zslopeprshaps>0 then shapsresponder=0;
-				if zslopeprshaps<0 then shapsresponder=1;
+		if -3>zslopepr&yvar then zslopepr&yvar=.; 
+		if zslopepr&yvar>3 then zslopepr&yvar=.; 
+			if -3>zslopepr&yvar then slopepr&yvar=.; 
+		if zslopepr&yvar>3 then slopepr&yvar=.; 
 		run;
 
 %mend;
@@ -457,12 +453,10 @@ run;
 
 *[A-5] - Correlations Among Continuous Traits;
 
-proc corr data=batanastrait spearman;
-	partial afab natcyc age bmim;
-	var SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
+proc corr data=batanastrait spearman best=15;
+	var afab natcyc age bmim SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm thdoc_3a5bm 
 		androsteronem androstanediolm etiocholanonem etiocholanediolm CRPm IL6m TNFam 
-		pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m p4allom p4pregnam p4allopregnam p5allom 
-		p5pregnam p5allopregnam allop4m pregnap4m allopregnap4m allop5m pregnap5m 
+		pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m allopregnap4m allop5m pregnap5m 
 		allopregnap5m intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi 
 		intprpss slopeprpss intprallo slopeprallo intprpregna slopeprpregna intprp5 
 		slopeprp5 intprthdoc slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b 
@@ -471,7 +465,7 @@ proc corr data=batanastrait spearman;
 		intpretiocholanediol slopepretiocholanediol intprcrp slopeprcrp intpril6 
 		slopepril6 intprtnfa slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 
 		slopeprpcing6 intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 
-		intprallop4 slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
+		/*intprallop4*/ slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
 		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
 		intprallopregnap5 slopeprallopregnap5;
 run;
@@ -568,6 +562,7 @@ proc print data=batanaspp;
 	where scannum ne .;
 run;
 
+
 %macro covar(xvar=, yvar=);
 proc mixed data=batanaspp covtest;
 class id;
@@ -655,55 +650,19 @@ approaches to removing variance associated with the menstrual cycle in our
 primary models. Therefore, depending on appropriateness for our outcome of
 interest, we will engage one of these two strategies. */
 
+
 proc print data=batanastrait; 
 var afab natcyc bmim zage;
 run;
 
-		
 
-proc corr data=batanastrait spearman best=10 plots=scatter;
-	partial afab natcyc bmim age;
-	var slopeprallo slopeprpregna slopeprp5 /*slopeprthdoc slopeprthdoc_3a5b*/ 
-		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
-	 slopepretiocholanediol slopeprcrp 
-		slopepril6 slopeprtnfa slopeprpcing7 
-		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8 /*intprallop4 slopeprallop4*/
-		 slopeprpregnap4  slopeprallopregnap4 
-		 slopeprallop5  slopeprpregnap5  
-		slopeprallopregnap5;
-	with slopeprshaps slopeprbdi slopeprpss ;
-run;
+	
 
 
-/*Bio Predictors of Cytokines*/
-
-proc corr data=batanastrait spearman best=10;
-	partial afab natcyc bmim age;
-	var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 slopeprthdoc slopeprthdoc_3a5b 
-		slopeprandrosterone slopeprandrostanediol slopepretiocholanone 
-	 slopepretiocholanediol slopeprpcing7 
-		slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
-
-		/*intprallop4 slopeprallop4*/
-		 slopeprpregnap4  slopeprallopregnap4 
-		 slopeprallop5  slopeprpregnap5  
-		slopeprallopregnap5;
-	with slopeprcrp 
-		slopepril6 slopeprtnfa ;
-run;
-
-
-data batanaspp; 
-merge batanaspp batanastrait;
-by id;  
-etioinc=.;
-if slopepretiocholanone>0 then etioinc=1; 
-if slopepretiocholanone<0 then etioinc=0; 
-run;
 	
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model BDI=behav_wk zbmi afab natcyc zage luteal slopepretiocholanone slopepretiocholanone*behav_wk/ solution;
+		model SHAPS=behav_wk zbmi afab natcyc zage luteal zp5m zP4m zallom zpregnam zthdocm zthdoc_3a5bm zetiocholanonem zetiocholanediolm zandrosteronem zandrostanediolm/ solution;
 		random intercept behav_wk/subject=id type=vc;
 		ods select covparms solutionf;
 		title "BDI - with random slopes";
@@ -716,7 +675,7 @@ run;
 	
 
 proc sgplot data=batanaspp;  
-reg x=slopepretiocholanone y=slopeprbdi; 
+reg x=zthdocm y=shapsm/group=afab; 
 run; 
 
 
@@ -759,13 +718,34 @@ run;
 
 %macro growth (xvar=, yvar=);
 
+data batanaspp; 
+merge batanaspp batanastrait; 
+by id; 
+run;
+
+proc corr data=batanastrait spearman ;
+	partial afab natcyc zbmi zage;
+	var &xvar.m intpr&xvar slopepr&xvar;
+	with &yvar.m intpr&yvar slopepr&yvar;
+	where z&xvar.m<3 and z&yvar.m<3;
+run;
+
+
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal slopepr&xvar slopepr&xvar*behav_wk/ solution;
+		model &yvar=behav_wk zbmi afab natcyc zage luteal zintpr&xvar /*zintpr&xvar*behav_wk*/ zslopepr&xvar zslopepr&xvar*behav_wk/ solution;
 		random intercept behav_wk/subject=id type=vc;
 		ods select covparms solutionf;
 		title "SLOPE of &xvar * TIME = &yvar";
+			where -3<zslopepr&xvar<3 and -3<zslopepr&yvar<3;
 	run;
+	
+	proc sgplot data=batanaspp;
+		vline scannum /response=&yvar.zd stat=mean limitstat=stderr;
+		vline scannum /response=&xvar.zd stat=mean limitstat=stderr;
+				title "Changes in Person-Standardized &xvar and &yvar Over Time";
+	run;
+
 
 %mend;
 
@@ -789,6 +769,258 @@ run;
 %growthrun;
 
 
+/* Creating Plots for Significant Associations*/ 
+
+/*ALLO*/ 
+
+/*allo-shaps - NOT SIG
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprshaps= zslopeprallo ; 
+where natcyc=0 and id not in (1017);
+run; */
+
+/*PREGNA*/ 
+
+proc print data=batanastrait; 
+var id zslopeprpregna zslopeprshaps; 
+run;
+
+*pregna-shaps - r2=.06, robust to sex and natcyc;
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprshaps= zslopeprpregna  ; 
+where id not in (741,982,1582,1630); 
+run; 
+
+*pregna-il6 - r2=.05, males r2=.36, females r2=.04; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopepril6= zslopeprpregna  ; 
+where id not in (389,456,569,982,1582,1630); 
+run; 
+
+
+*pregna-Ramyc8 - r2=.19, robust to sex and natcyc; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprR_Amy_cp8= zslopeprpregna  ; 
+where id not in (456,741,949,982,1346,1504,1582,1630); 
+run; 
+
+
+*pregna-Lamyc8 - r2=.06, stronger in males, robust to natcyc; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprL_Amy_cp8= zslopeprpregna  ; 
+where id not in (647,741,949,982,1582,1630); 
+run; 
+
+
+*pregna-CRP - NOT SIG - had been marginal in dev covary H1 models; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprCRP= zslopeprpregna  ; 
+where id not in (75,104,247,569,720,741,847,982,949,1346,1582,1630); 
+run; 
+
+/*PREGNENOLONE*/ 
+
+*p5-BDI - not robust to eliminating worst leverage values; in males, nonparadoxical rel; in females, paradoxical ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprBDI= slopeprp5  ; 
+where id not in (459,104,741,244,847,1346,1465,1504,982); 
+run; 
+
+*p5-CRP - not sig ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprCRP= slopeprp5  ; 
+where id not in (847,1603,459,1465); 
+run; 
+
+*p5-amygL - not sig ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage); 
+id id; 
+model slopeprL_Amy_cp8= slopeprp5  ; 
+where id not in (847,741); 
+run; 
+
+*p5-amygR - robust to eliminating high leverage values; ONLY sig in females ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprR_Amy_cp8= slopeprp5  ; 
+where id not in (329,741,459,847,1346,1465,1504,1603); 
+run; 
+
+
+/*THDOC-3a5b*/ 
+
+*thdoc3a5b-shaps - not sig; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprSHAPS= slopeprthdoc_3a5b  ; 
+where id not in (812,1460,945,392,1783); 
+run; 
+
+
+*thdoc3a5b-bdi - not sig; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprBDI= slopeprthdoc_3a5b  ; 
+where id not in (392,1783,945,1460,812,1346,623,1702,387); 
+run; 
+
+/*ANDROSTERONE*/ 
+
+*andro-bdi - not sig; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprBDI= slopeprandrosterone  ; 
+where id not in (456,1680,1582); 
+run; 
+
+
+*andro-pcing6 - not sig; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprpcing6= slopeprandrosterone  ; 
+where id not in (170,456,247,403,1582,1680,549); 
+run;
+
+*andro-amyL - not sig; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprL_Amy_cp8= slopeprandrosterone  ; 
+where id not in (949,877,1680); 
+run; 
+
+*andro-amyR - sig after removing leverage values, r2=.14; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprR_Amy_cp8= slopeprandrosterone  ; 
+where id not in (877,247,456,1680,403,1504); 
+run; 
+
+/*ANDROSTANEDIOL*/ 
+
+*androstanediol-BDI - very small, marginally sig, not sig within either sex ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprbdi= slopeprandrostanediol  ; 
+where id not in (199, 104,329,1346,1582,403); 
+run;
+
+
+*androstanediol-SHAPS - not sig ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprshaps= slopeprandrostanediol  ; 
+where id not in (1633,403) ; 
+run;
+
+
+*androstanediol-amyR - not sig ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprR_Amy_cp8= slopeprandrostanediol  ; 
+where id not in (1346,1504,329) ; 
+run;
+
+
+*androstanediol-amyL - r2=.07, NS in females; males r2=.32; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprL_Amy_cp8= slopeprandrostanediol  ; 
+where id not in (329,403) ; 
+run;
+
+
+/*ETIOCHOLANOLONE*/ 
+
+*etiocholanolone-BDI - very small, marginally sig, not sig within either sex ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprbdi= slopepretiocholanone  ; 
+where id not in (456,549,741,847,1347,1706) ; 
+run;
+
+*etiocholanolone-SHAPS - r2=.11 , males r2=.30 ; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprshaps= slopepretiocholanone  ; 
+where id not in (456,741,847) ; 
+run;
+
+*etiocholanolone-PSS - small, marginal; males r2=.19; NS in females; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprpss= slopepretiocholanone  ; 
+where id not in (233,456,847,1347,549); 
+run;
+
+
+/*ETIOCHOLANEDIOL*/ 
+
+*etiocholanediol-BDI - NOT SIG in either sex; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprbdi= slopepretiocholanediol  ; 
+where id not in (549,244,741,329,1680,1346,389,105,1124,1582,23) ; 
+run;
+
+
+*etiocholanediol-SHAPS - NOT SIG in either sex; might be there in males; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprshaps= slopepretiocholanediol  ; 
+where id not in (877,1504,1783,389,741,244,329,1680,549,105,647,1124,141,23); 
+run;
+
+
+
+*etiocholanediol-CRP - NOT SIG in either sex; also might be there in males; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprCRP= slopepretiocholanediol  ; 
+where id not in (549,741,1680,244,329,389,105,1504,1633) and afab=1; 
+run;
+
+
+*etiocholanediol-IL6 - NOT SIG in either sex; another that might be there in males; 
+
+proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage cooksd); 
+id id; 
+model slopeprIL6= slopepretiocholanediol  ; 
+where id not in (329,389,244,741,1680,549,105,23,1465,1124,855) and afab=1; 
+run;
 
 
 
