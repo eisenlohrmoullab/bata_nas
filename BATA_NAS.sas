@@ -384,6 +384,27 @@ run;
 			tx;
 		title "REMAINING &yvar Low Outliers after initial removal of <-3SD and restandardization";
 	run;
+	
+	/*data batanaspp;
+		set batanaspp;
+
+		if z&yvar >=3 then
+			&yvar=.;
+
+		if z&yvar <=-3 then
+			&yvar=.;
+		z&yvar=&yvar;
+	run;
+
+	proc standard data=batanaspp out=batanaspp m=0 std=1;
+		var z&yvar;
+	run;
+
+	proc univariate data=batanaspp;
+		var &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
+		ods select histogram;
+		title "&yvar (Outliers Removed - SECOND PASS)";*/
 
 %mend;
 
@@ -506,7 +527,7 @@ run;
 	proc print data=batanaspp;
 		where z&yvar<-3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age Hormone_Group luteal bmi tx;
-		title "REMAINING &yvar Love Outliers after initial removal of <-3SD and restandardization";
+		title "REMAINING &yvar Low Outliers after initial removal of <-3SD and restandardization";
 	run;
 	
 	proc anova data=batanaspp;
@@ -520,6 +541,28 @@ run;
 		panelby hormone_group ;
 		reg x=visitnum y=&yvar/group=id; 
 		run; 
+		
+		data batanaspp;
+		set batanaspp;
+
+		if z&yvar >=3 then
+			&yvar=.;
+
+		if z&yvar <=-3 then
+			&yvar=.;
+		z&yvar=&yvar;
+	run;
+
+	proc standard data=batanaspp out=batanaspp m=0 std=1;
+		var z&yvar;
+	run;
+
+	proc univariate data=batanaspp;
+		var &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
+		ods select histogram;
+		title "&yvar (Outliers Removed - SECOND PASS)";
+	run;
 
 %mend;
 
@@ -534,6 +577,7 @@ run;
 %mend;
 
 %removeoutliersratiorun;
+
 *[D-15] Saving Person Means for repeated measures and Sample Standardizing individual diffs in person means, as well as calculating state deviations;
 
 %macro meansanddevs (yvar=);
@@ -731,9 +775,34 @@ data batanastrait;
 		delete;
 run;
 
+/*SAVE DATASETS*/ 
+
+data batanas.batanaspp; 
+set batanaspp; 
+run; 
+
+data batanas.batanastrait; 
+set batanastrait; 
+run;
+
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
+
+/*Load Prepped Data*/ 
+libname batanas "Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/03_code_dataedits_output";
+data batanastrait; 
+set batanas.batanastrait; 
+run; 
+
+data batanaspp; 
+set batanas.batanaspp; 
+run; 
+
+
+
+
+
 *[A-1] - Print Between-Person Trait Dataset;
 
 proc print data=batanastrait;
@@ -1002,45 +1071,35 @@ neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 /*Printing Scan Days Dataset to see  Missing Values*/
 proc print data=batanaspp;
-	var id visitnum zbmi bmim afab natcyc zage luteal shaps allo pregna p5 thdoc 
-		thdoc_3a5b androsterone androstanediol etiocholanone etiocholanediol allop4 
-		pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 SHAPS BAI BDI PSS CRP IL6 
-		TNFa pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
-	where visitnum ne .;
+	var id visitnum afab bc_pill_patch mirena implant meno luteal behav_wk 
+	zbmi zage ;
 run;
 
 %macro covar(xvar=, yvar=);
 
 
 	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
-		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m / solution 
+		class id visitnum (ref=first) afab (ref=first) bc_pill_patch (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
+		model &yvar=behav_wk zbmi zage afab mirena bc_pill_patch implant meno afab luteal zp4m z&xvar.m / solution 
 			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
-		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+				where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
+		ods select ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between-Person Variance in &xvar";
 	run;
-
-		proc mixed data=batanaspp covtest;
-		class id visitnum (ref=first) afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
-		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m z&xvar.m*behav_wk/ solution 
-			ddfm=kenwardroger2;
-		random intercept behav_wk/subject=id type=vc;
-		repeated visitnum /subject=id type=ar(1);
-		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
-		title "Predicting &yvar Trajectory from Between-Person Variance in &xvar - WITH RANDOM TIME SLOPE";
-	run;
 	
-		proc mixed data=batanaspp covtest;
-			class id visitnum (ref=first) afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
-		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m z&xvar.m*behav_wk/ solution 
+	proc mixed data=batanaspp covtest ;
+		class id visitnum (ref=first) afab (ref=first) bc_pill_patch (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
+		model &yvar=behav_wk zbmi zage afab mirena bc_pill_patch implant meno afab luteal zp4m z&xvar.m / solution 
 			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
-		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+		ods select ConvergenceStatus covparms solutionf;
 		repeated visitnum /subject=id type=ar(1);
-		title "Predicting &yvar Trajectory from Between-Person Variance in &xvar - FIXED SLOPE";
+				where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
+		title "Predicting &yvar from Between-Person Variance in &xvar - FIXED SLOPE + REPEATED";
 	run;
-
+	
+	
 %mend;
 
 %let xlist= allo pregna p5 thdoc thdoc_3a5b
@@ -1060,6 +1119,43 @@ pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 %mend;
 
 %covarrun;
+
+/* Regressions */ 
+data batanastrait; 
+set batanas.batanastrait; 
+run; 
+
+proc reg data=batanastrait plots(label)=(rstudentbyleverage fitplot);
+	id id; 
+	model SHAPSm= zbmi zage afab mirena implant bc_pill_patch zpregnam/ influence ; 
+	output out= leverage h=leverage; 
+	run;
+	
+	data leverage (keep=id leverage);
+	set leverage; 
+	run; 
+	
+	data batanastrait; 
+	merge batanastrait leverage; 
+	by id; 
+	run; 
+
+proc reg data=batanastrait plots(label)=(rstudentbyleverage fitplot);
+	id id; 
+		where leverage<.06; 
+		model SHAPSm= zbmi zage afab mirena implant bc_pill_patch zpregnam/ influence ; 
+	run;
+
+
+
+
+
+
+
+
+
+
+
 *[H-2] - HYPOTHESIS 2 TESTS ;
 
 /*(Hypothesis 2) To evaluate how differences in neurosteroid change from pre- to
