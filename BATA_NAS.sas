@@ -312,12 +312,9 @@ run;
 		
 		proc sgpanel data=batanaspp; 
 		panelby hormone_group ;
-		reg x=behav_wk y=&yvar/group=id; 
+		reg x=visitnum y=&yvar/group=id; 
 		run; 
 		
-		proc sgplot data=batanaspp; 
-		vline visitnum/response=&yvar stat=mean limitstat=stderr group=hormone_group ; 
-		run; 
 		
 		proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
@@ -333,7 +330,7 @@ run;
 		title "&yvar Low Outliers <-3SD";
 	run;
 
-	/*proc print data=batanaspp;
+	proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age hormone_group luteal bmi tx;
 		title "REMOVED: &yvar High Outliers";
@@ -385,8 +382,8 @@ run;
 		where z&yvar<-3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
 			tx;
-		title "REMAINING &yvar Love Outliers after initial removal of <-3SD and restandardization";
-	run;*/
+		title "REMAINING &yvar Low Outliers after initial removal of <-3SD and restandardization";
+	run;
 
 %mend;
 
@@ -447,6 +444,11 @@ run;
 		ods select boxplot;
 		run;
 		
+			proc sgpanel data=batanaspp; 
+		panelby hormone_group ;
+		reg x=visitnum y=&yvar/group=id; 
+		run; 
+		
 		proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal 
@@ -461,7 +463,7 @@ run;
 		title "&yvar Low Outliers <-3SD";
 	run;
 
-	/*proc print data=batanaspp;
+	proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
 		title "REMOVED: &yvar High Outliers";
@@ -496,16 +498,28 @@ run;
 	run;
 
 	proc print data=batanaspp;
-		where z&yvar>2 and &yvar ne .;
-		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
+		where z&yvar>3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age Hormone_Group luteal bmi tx;
 		title "REMAINING &yvar High Outliers after initial removal of >3SD and restandardization";
 	run;
 
 	proc print data=batanaspp;
-		where z&yvar<-2 and &yvar ne .;
-		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
+		where z&yvar<-3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age Hormone_Group luteal bmi tx;
 		title "REMAINING &yvar Love Outliers after initial removal of <-3SD and restandardization";
-	run;*/
+	run;
+	
+	proc anova data=batanaspp;
+		class hormone_group;
+		model &yvar=hormone_group;
+		title "Hormonal Status Effect on OUTLIER-FREE (>3SD) &yvar";
+		ods select boxplot;
+		run;
+		
+			proc sgpanel data=batanaspp; 
+		panelby hormone_group ;
+		reg x=visitnum y=&yvar/group=id; 
+		run; 
 
 %mend;
 
@@ -849,9 +863,20 @@ run;
 		/*ods select nobs covparms solutionf ; */
 		title "&yvar - Null Model Random Intercept Only";
 	run;
+	
+	proc mixed data=batanaspp covtest;
+		class id hormone_group (ref='Male');
+		model &yvar= zage zbmi hormone_group / solution ddfm=kenwardroger2;
+		random intercept /subject=id type=vc;
+		where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
+		ods output covparms=icctemp1;
+
+		/*ods select nobs covparms solutionf ; */
+		title "&yvar - Effect of Hormone_Group, age, bmi -  Random Intercept Only";
+	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 
@@ -860,7 +885,7 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
 
@@ -869,7 +894,7 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
 		repeated visitnum/subject=id type=ar(1);
@@ -879,7 +904,7 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		repeated visitnum/subject=id type=ar(1);
@@ -929,7 +954,7 @@ run;
 	run;
 
 	proc sgpanel data=batanaspp;
-		panelby natcyc;
+		panelby hormone_group;
 		colaxis integer;
 		series x=behav_wk y=&yvar/ group=id markers;
 	run;
@@ -985,38 +1010,35 @@ proc print data=batanaspp;
 run;
 
 %macro covar(xvar=, yvar=);
-	proc mixed data=batanaspp covtest;
-		class id;
-		model &yvar=/ solution ddfm=kenwardroger2;
-		random intercept /subject=id type=vc;
-		ods select covparms;
-		title "&yvar NULL MODEL";
-	run;
+
 
 	proc mixed data=batanaspp covtest;
-		class id;
-		model &yvar=behav_wk/ solution ddfm=kenwardroger2;
+		class id afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m / solution 
+			ddfm=kenwardroger2;
+		random intercept /subject=id type=vc;
+		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
+		title "Predicting &yvar from Between-Person Variance in &xvar";
+	run;
+
+		proc mixed data=batanaspp covtest;
+		class id visitnum (ref=first) afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m z&xvar.m*behav_wk/ solution 
+			ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
-		ods select covparms solutionf;
-		title "&yvar UNCOND GROWTH MODEL";
-	run;
-
-	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
-		random intercept &xvar.d/subject=id type=vc;
+		repeated visitnum /subject=id type=ar(1);
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
-		title "Predicting &yvar from Between and Within-Person Variance in &xvar";
+		title "Predicting &yvar Trajectory from Between-Person Variance in &xvar - WITH RANDOM TIME SLOPE";
 	run;
-
-	proc mixed data=batanaspp covtest;
-		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
-		model &yvar=behav_wk zbmi afab natcyc zage luteal z&xvar.m &xvar.d/ solution 
+	
+		proc mixed data=batanaspp covtest;
+			class id visitnum (ref=first) afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		model &yvar=behav_wk zbmi afab zage hormone_group luteal z&xvar.m z&xvar.m*behav_wk/ solution 
 			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select Nobs fitstatistics ConvergenceStatus covparms solutionf;
-		title "no random slope - Predicting &yvar from Between and Within-Person Variance in &xvar";
+		repeated visitnum /subject=id type=ar(1);
+		title "Predicting &yvar Trajectory from Between-Person Variance in &xvar - FIXED SLOPE";
 	run;
 
 %mend;
