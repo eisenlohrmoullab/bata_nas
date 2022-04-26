@@ -13,7 +13,7 @@ PROC IMPORT DATAFILE=REFILE DBMS=CSV OUT=selfreport REPLACE;
 RUN;
 
 data selfreport;
-	set selfreport;
+	modify selfreport;
 
 	if subject_id="" then
 		delete;
@@ -27,7 +27,7 @@ PROC IMPORT DATAFILE=REFILE DBMS=CSV OUT=nasrepro REPLACE;
 RUN;
 
 data nasrepro;
-	set nasrepro;
+	modify nasrepro;
 
 	if subject_id="" then
 		delete;
@@ -47,7 +47,7 @@ proc sort data=immune out=immune nodupkey;
 run;
 
 data immune;
-	set immune;
+	modify immune;
 
 	if subject_id="" then
 		delete;
@@ -65,7 +65,7 @@ proc sort data=bmi;
 run;
 
 data bmi;
-	set bmi;
+	modify bmi;
 
 	if subject_id="" then
 		delete;
@@ -79,7 +79,7 @@ PROC IMPORT DATAFILE=REFILE DBMS=XLSX OUT=hammer21 REPLACE;
 RUN;
 
 data hammer21;
-	set hammer21;
+	modify hammer21;
 
 	if subject_id="" then
 		delete;
@@ -129,10 +129,10 @@ run;
 *[D-10] Merge temp2, hammer21, hammer22 into batanaspp, select only the variables we need, and PREP new variables;
 
 data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
-		prog_ng_ml meno Hormonal_Status luteal p4 allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		OralContraceptive Progestin_IUD BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 
-		visitnum luteal);
+		prog_ng_ml p4 allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
+		etiocholanone etiocholanediol CRP IL6 TNFa meno Hormonal_Status luteal 
+		forward_count bc_pill_patch Mirena HRT hysterectomy implant ovarectomy 
+		BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 visitnum luteal);
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -157,6 +157,33 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	else
 		afab=0;
 
+	if meno=. then
+		meno=0;
+
+	if Mirena=. then
+		Mirena=0;
+
+	if luteal=. then
+		luteal=0;
+
+	if bc_pill_patch=. then
+		bc_pill_patch=0;
+
+	if HRT=. then
+		HRT=0;
+
+	if meno=. then
+		meno=0;
+
+	if hysterectomy=. then
+		hysterectomy=0;
+
+	if ovarectomy=. then
+		ovarectomy=0;
+
+	if implant=. then
+		implant=0;
+
 	/*recode missing luteal to 0*/
 	if luteal=999 then
 		luteal=0;
@@ -178,7 +205,6 @@ run;
 *[D-12] Sample-Standardize Variables;
 
 %macro samplestandardize (yvar=);
-
 	data batanaspp;
 		set batanaspp;
 
@@ -213,27 +239,229 @@ run;
 
 %samplestandardizerun;
 
+/* Manual Removal of Outliers*/
+data batanaspp;
+	set batanaspp;
 
+	if allo>1000 then
+		allo=.;/*
+		if id=1582 then delete; 
+		if id=459 then delete; 
+		if id=392 and visitnum=0 then allo=.; 
+		if id=47 and visitnum=0 then allo=.; */
+run;
 
-	/* ADDITIONAL MANUAL EXCLUSIONS*/
+/* Code Hormonal Status Trait variable and Re-merge*/
+data batanasreproBL;
+	set batanaspp;
+
+	if visitnum ne 0 then
+		delete;
+	hormone_group='Naturally Cycling';
+
+	if bc_pill_patch=1 then
+		hormone_group='CHC (Pill/Patch)';
+
+	if meno=1 then
+		hormone_group="Meno";
+
+	if Mirena=1 then
+		hormone_group='Mirena';
+
+	if implant=1 then
+		hormone_group='Progestin Implant';
+
+	if hysterectomy=1 then
+		hormone_group='Surg Meno (+ HRT)';
+
+	if ovarectomy=1 then
+		hormone_group='Surg Meno (+ HRT)';
+
+	if implant=1 then
+		hormone_group='Progestin Implant';
+
+	if afab=0 then
+		hormone_group='Male';
+run;
+
+proc freq data=batanasreproBL;
+	table afab*hormone_group;
+run;
+
+data batanaspp;
+	merge batanaspp batanasreproBL;
+	by id;
+run;
+
+*[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass;
+
+%macro removeoutliers (yvar=);
+	proc univariate data=batanaspp;
+		var &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
+		ods select histogram;
+		title "Raw &yvar";
+	run;
+
+	proc anova data=batanaspp;
+		class hormone_group;
+		model &yvar=hormone_group;
+		title "Hormonal Status Effect on Raw &yvar";
+		ods select boxplot;
+		run;
+		
+		proc sgpanel data=batanaspp; 
+		panelby hormone_group ;
+		reg x=behav_wk y=&yvar/group=id; 
+		run; 
+		
+		proc sgplot data=batanaspp; 
+		vline visitnum/response=&yvar stat=mean limitstat=stderr group=hormone_group ; 
+		run; 
+		
+		proc print data=batanaspp;
+		where z&yvar>3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal 
+			bmi tx;
+		title "&yvar High Outliers >3SD";
+	run;
+
+	proc print data=batanaspp;
+		where z&yvar<-3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
+			tx;
+		title "&yvar Low Outliers <-3SD";
+	run;
+
+	/*proc print data=batanaspp;
+		where z&yvar>3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group luteal bmi tx;
+		title "REMOVED: &yvar High Outliers";
+	run;
+
+	proc print data=batanaspp;
+		where z&yvar<-3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group luteal bmi tx;
+		title "REMOVED: &yvar Low Outliers";
+	run;
+
 	data batanaspp;
 		set batanaspp;
 
-		if zallo>2 then
-			allo=.;
+		if z&yvar >=3 then
+			&yvar=.;
 
-		zallo=.; 
-			run; 
-			
-			proc standard data=batanaspp out=batanaspp m=0 std=1;
-		var zallo;
-	run;	
-			
-*[D-13] Macro to remove outliers;
+		if z&yvar <=-3 then
+			&yvar=.;
+		z&yvar=&yvar;
+	run;
 
-%macro removeoutliers (yvar=);
+	proc standard data=batanaspp out=batanaspp m=0 std=1;
+		var z&yvar;
+	run;
+
+	proc univariate data=batanaspp;
+		var &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
+		ods select histogram;
+		title "&yvar (Outliers Removed)";
+	run;
+
+	proc anova data=batanaspp;
+		class hormone_group;
+		model &yvar=hormone_group;
+		title "Hormonal Status Effect on &yvar (Outliers Removed)";
+		ods select boxplot;
+		run;
 
 	proc print data=batanaspp;
+		where z&yvar>3 and &yvar ne .;
+		var id visitnum &yvar z&yvar zP4 afab age hormone_group forward_count luteal 
+			bmi tx;
+		title "REMAINING &yvar High Outliers after initial removal of >3SD and restandardization";
+	run;
+
+	proc print data=batanaspp;
+		where z&yvar<-3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
+			tx;
+		title "REMAINING &yvar Love Outliers after initial removal of <-3SD and restandardization";
+	run;*/
+
+%mend;
+
+%let ylist= allo pregna p5 thdoc thdoc_3a5b 
+		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
+
+%macro removeoutliersrun;
+	%do i=1 %to 16;
+		%let yvar=%scan(&ylist, &i);
+		%removeoutliers(yvar=&yvar);
+	%end;
+%mend;
+
+%removeoutliersrun;
+
+* [D-14] Calculate New Variables after Outliers Removed;
+
+data batanaspp;
+	set batanaspp;
+
+	/*Create Neurosteroid Ratios - AFTER outliers removed above*/
+	allop4=allo/p4;
+	pregnap4=pregna/p4;
+	allopregnap4=(allo+pregna)/p4;
+	allop5=allo/p5;
+	pregnap5=pregna/p5;
+	allopregnap5=(allo+pregna)/p5;
+	allop4ng=allo/prog_ng_ml;
+	pregnap4ng=pregna/prog_ng_ml;
+	allopregnap4ng=(allo+pregna)/prog_ng_ml;
+run;
+
+
+*[D-13] Macro to identify/remove ratio outliers;
+
+%macro removeoutliersratio (yvar=);
+	data batanaspp;
+		set batanaspp;
+		z&yvar=&yvar;
+	run;
+
+	proc standard data=batanaspp out=batanaspp m=0 std=1;
+		var z&yvar;
+	run;
+	
+	proc univariate data=batanaspp;
+		var &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
+		ods select histogram;
+		title "Raw &yvar";
+	run;
+
+	proc anova data=batanaspp;
+		class hormone_group;
+		model &yvar=hormone_group;
+		title "Hormonal Status Effect on Raw &yvar";
+		ods select boxplot;
+		run;
+		
+		proc print data=batanaspp;
+		where z&yvar>3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal 
+			bmi tx;
+		title "&yvar High Outliers >3SD";
+	run;
+
+	proc print data=batanaspp;
+		where z&yvar<-3 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
+			tx;
+		title "&yvar Low Outliers <-3SD";
+	run;
+
+	/*proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
 		title "REMOVED: &yvar High Outliers";
@@ -253,58 +481,45 @@ run;
 
 		if z&yvar <=-3 then
 			&yvar=.;
+		z&yvar=&yvar;
+	run;
 
-		if z&yvar >=3 then
-			z&yvar=.;
-
-		if z&yvar <=-3 then
-			z&yvar=.;
+	proc standard data=batanaspp out=batanaspp m=0 std=1;
+		var z&yvar;
 	run;
 
 	proc univariate data=batanaspp;
 		var &yvar z&yvar;
-		histogram &yvar z&yvar;
+		histogram &yvar z&yvar/ barlabel=count;
 		ods select histogram;
-		title "&yvar";
-		run; 
-		
-	%mend;
+		title "&yvar (Outliers Removed)";
+	run;
 
-	%let ylist= allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
+	proc print data=batanaspp;
+		where z&yvar>2 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
+		title "REMAINING &yvar High Outliers after initial removal of >3SD and restandardization";
+	run;
 
-	%macro removeoutliersrun;
-		%do i=1 %to 16;
-			%let yvar=%scan(&ylist, &i);
-			%removeoutliers(yvar=&yvar);
-		%end;
-	%mend;
+	proc print data=batanaspp;
+		where z&yvar<-2 and &yvar ne .;
+		var id visitnum &yvar z&yvar afab age Hormonal_Status luteal bmi tx;
+		title "REMAINING &yvar Love Outliers after initial removal of <-3SD and restandardization";
+	run;*/
 
-	%removeoutliersrun;
-	
-	* [D-14] Calculate New Variables after Outliers Removed;
+%mend;
 
-data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
-		prog_ng_ml meno Hormonal_Status luteal p4 allo pregna p5 thdoc thdoc_3a5b 
-		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		OralContraceptive Progestin_IUD BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 
-		visitnum luteal allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 
-		allopregnap4ng allop4ng pregnap4ng);
-	set batanaspp;
+%let ylist= allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 
+		allopregnap4ng allop4ng pregnap4ng;
 
-	/*Create Neurosteroid Ratios - AFTER outliers removed above*/
-	allop4=allo/p4;
-	pregnap4=pregna/p4;
-	allopregnap4=(allo+pregna)/p4;
-	allop5=allo/p5;
-	pregnap5=pregna/p5;
-	allopregnap5=(allo+pregna)/p5;
-	allop4ng=allo/prog_ng_ml;
-	pregnap4ng=pregna/prog_ng_ml;
-	allopregnap4ng=(allo+pregna)/prog_ng_ml;
-run;
+%macro removeoutliersratiorun;
+	%do i=1 %to 9;
+		%let yvar=%scan(&ylist, &i);
+		%removeoutliersratio(yvar=&yvar);
+	%end;
+%mend;
 
+%removeoutliersratiorun;
 *[D-15] Saving Person Means for repeated measures and Sample Standardizing individual diffs in person means, as well as calculating state deviations;
 
 %macro meansanddevs (yvar=);
