@@ -92,16 +92,12 @@ PROC IMPORT DATAFILE=REFILE DBMS=XLSX OUT=hammer22 REPLACE;
 	GETNAMES=YES;
 RUN;
 
-proc format;
-	value hormonal_status 0='No Ovaries' 2='IUD' 3='HBC' 4='Other';
-run;
 
 *[D-7] Merge selfreport and nasrepro into temp1;
 
 data temp1;
 	merge selfreport nasrepro;
 	by Subject_ID visit_mlm;
-	format Hormonal_status hormonal_status.;
 run;
 
 proc sort data=temp1;
@@ -128,11 +124,7 @@ run;
 
 *[D-10] Merge temp2, hammer21, hammer22 into batanaspp, select only the variables we need, and PREP new variables;
 
-data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
-		prog_ng_ml p4 allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
-		etiocholanone etiocholanediol CRP IL6 TNFa meno Hormonal_Status luteal 
-		forward_count bc_pill_patch Mirena HRT hysterectomy implant ovarectomy 
-		BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 visitnum luteal);
+data batanaspp ;
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -157,34 +149,7 @@ data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS
 	else
 		afab=0;
 
-	if meno=. then
-		meno=0;
-
-	if Mirena=. then
-		Mirena=0;
-
-	if luteal=. then
-		luteal=0;
-
-	if bc_pill_patch=. then
-		bc_pill_patch=0;
-
-	if HRT=. then
-		HRT=0;
-
-	if meno=. then
-		meno=0;
-
-	if hysterectomy=. then
-		hysterectomy=0;
-
-	if ovarectomy=. then
-		ovarectomy=0;
-
-	if implant=. then
-		implant=0;
-
-	/*recode missing luteal to 0*/
+		/*recode missing luteal to 0*/
 	if luteal=999 then
 		luteal=0;
 
@@ -201,6 +166,31 @@ run;
 proc sort data=batanaspp out=batanaspp nodupkey;
 	by id visitnum;
 run;
+
+
+/*Save Reproductive Traits and re-merge*/ 
+
+data reprotraits (keep=id meno chc mirena implant);
+	set batanaspp; 
+	where visitnum=0;
+	chc=bc_pill_patch; 
+if meno=. then meno=0;
+if hysterectomy=1 then meno=1; 
+if ovarectomy=1 then meno=1; 
+run; 
+
+data batanaspp; 
+set batanaspp; 
+drop meno bc_pill_patch mirena implant;
+run;
+
+data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
+		prog_ng_ml p4 allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
+		etiocholanone etiocholanediol CRP IL6 TNFa meno Hormonal_Status luteal 
+		forward_count chc mirena implant BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 visitnum luteal); 
+merge batanaspp reprotraits; 
+by id; 
+run; 
 
 *[D-12] Sample-Standardize Variables;
 
@@ -252,14 +242,11 @@ data batanaspp;
 run;
 
 /* Code Hormonal Status Trait variable and Re-merge*/
-data batanasreproBL;
+data batanaspp;
 	set batanaspp;
-
-	if visitnum ne 0 then
-		delete;
 	hormone_group='Naturally Cycling';
 
-	if bc_pill_patch=1 then
+	if chc=1 then
 		hormone_group='CHC (Pill/Patch)';
 
 	if meno=1 then
@@ -271,26 +258,11 @@ data batanasreproBL;
 	if implant=1 then
 		hormone_group='Progestin Implant';
 
-	if hysterectomy=1 then
-		hormone_group='Surg Meno (+ HRT)';
-
-	if ovarectomy=1 then
-		hormone_group='Surg Meno (+ HRT)';
-
 	if implant=1 then
 		hormone_group='Progestin Implant';
 
 	if afab=0 then
 		hormone_group='Male';
-run;
-
-proc freq data=batanasreproBL;
-	table afab*hormone_group;
-run;
-
-data batanaspp;
-	merge batanaspp batanasreproBL;
-	by id;
 run;
 
 *[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass;
@@ -647,7 +619,7 @@ run;
 
 *[D-17] Saving smaller dataset and creating zbmi and zage;
 
-data batanastrait (keep=id natcyc zbmi bmim OralContraceptive Progestin_IUD age 
+data batanastrait (keep=id natcyc zbmi bmim chc mirena meno implant age 
 		zage afab tx SHAPSm BAIm BDIm PSSm p4m prog_ng_mlm allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m 
@@ -906,15 +878,7 @@ proc corr data=batanastrait spearman best=15;
 		slopepregnap4ng intallopregnap4ng intallop4ng intpregnap4ng;
 run;
 
-proc corr data=batanastrait spearman best=10;
-	partial afab natcyc age bmim;
-	var p4m prog_ng_mlm allom pregnam p5m thdocm thdoc_3a5bm androsteronem 
-		androstanediolm etiocholanonem etiocholanediolm allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m allopregnap4ngm allop4ngm 
-		pregnap4ngm;
-	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
-		R_Amy_cp8m;
-run;
+
 
 *[A-6] - Within-Person Descriptives;
 
@@ -1070,33 +1034,38 @@ variability in neurosteroids on each outcome. We predict that higher levels of
 neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 /*Printing Scan Days Dataset to see  Missing Values*/
-proc print data=batanaspp;
-	var id visitnum afab bc_pill_patch mirena implant meno luteal behav_wk 
-	zbmi zage ;
-run;
+
 
 %macro covar(xvar=, yvar=);
 
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum (ref=first) afab (ref=first) bc_pill_patch (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
-		model &yvar=behav_wk zbmi zage afab mirena bc_pill_patch implant meno afab luteal zp4m z&xvar.m / solution 
+		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
+		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
 			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
-				where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
 		ods select ConvergenceStatus covparms solutionf;
-		title "Predicting &yvar from Between-Person Variance in &xvar";
+		title "Predicting &yvar from Between- and Within-Person Variance in &xvar";
 	run;
 	
 	proc mixed data=batanaspp covtest ;
-		class id visitnum (ref=first) afab (ref=first) bc_pill_patch (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
-		model &yvar=behav_wk zbmi zage afab mirena bc_pill_patch implant meno afab luteal zp4m z&xvar.m / solution 
+		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
+		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
 			ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select ConvergenceStatus covparms solutionf;
 		repeated visitnum /subject=id type=ar(1);
-				where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
-		title "Predicting &yvar from Between-Person Variance in &xvar - FIXED SLOPE + REPEATED";
+		title "Predicting &yvar from Between- and Within-Person Variance in &xvar - FIXED SLOPE + REPEATED";
+	run;
+	
+	proc mixed data=batanaspp covtest ;
+		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
+		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
+			ddfm=kenwardroger2;
+		random intercept behav_wk/subject=id type=vc;
+		ods select ConvergenceStatus covparms solutionf;
+		repeated visitnum /subject=id type=ar(1);
+		title "Predicting &yvar from Between- and Within-Person Variance in &xvar - RANDOM SLOPE + REPEATED";
 	run;
 	
 	
@@ -1120,40 +1089,99 @@ pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %covarrun;
 
-/* Regressions */ 
-data batanastrait; 
-set batanas.batanastrait; 
+
+proc sort data=batanaspp out=batanastrait nodupkey; 
+by id; 
 run; 
 
-proc reg data=batanastrait plots(label)=(rstudentbyleverage fitplot);
+proc print data=batanastrait;
+var afab mirena chc implant zage zbmi p4m prog_ng_mlm allom pregnam p5m thdocm thdoc_3a5bm androsteronem 
+		androstanediolm etiocholanonem etiocholanediolm allop4m pregnap4m 
+		allopregnap4m allop5m pregnap5m allopregnap5m allopregnap4ngm allop4ngm 
+		pregnap4ngm SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
+		R_Amy_cp8m;
+run; 
+
+proc corr data=batanastrait spearman best=10;
+	var afab  implant mirena chc p4m prog_ng_mlm allom pregnam p5m thdocm thdoc_3a5bm androsteronem 
+		androstanediolm etiocholanonem etiocholanediolm allop4m pregnap4m 
+		allopregnap4m allop5m pregnap5m allopregnap5m ;
+	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
+		R_Amy_cp8m;
+run;
+
+/* STEROID TRAIT PREDICTORS OF SHAPS */
+
+proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
 	id id; 
-	model SHAPSm= zbmi zage afab mirena implant bc_pill_patch zpregnam/ influence ; 
-	output out= leverage h=leverage; 
+	model SHAPSm= zbmi zage afab mirena implant chc zp5m zp4m zallom zpregnam zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/ zthdocm zthdoc_3a5bm/ influence ; 
+	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
 	run;
 	
-	data leverage (keep=id leverage);
-	set leverage; 
+proc print data=batanastrait; 
+	var id hormone_group afab; 
+	where id in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
+	run;	
+
+* Probing PREGNAm - significant; 
+	
+	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id; 
+	model SHAPSm= zpregnam / influence ; 
+	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
+	run;
+	
+	proc sgplot data=batanastrait; 
+	reg x=zpregnam y=shapsm/group=hormone_group; 
+	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
 	run; 
 	
-	data batanastrait; 
-	merge batanastrait leverage; 
-	by id; 
-	run; 
-
-proc reg data=batanastrait plots(label)=(rstudentbyleverage fitplot);
+* Probing ANDROSTERONEm - not much going on; 
+	
+	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
 	id id; 
-		where leverage<.06; 
-		model SHAPSm= zbmi zage afab mirena implant bc_pill_patch zpregnam/ influence ; 
+	model SHAPSm= zandrosteronem / influence ; 
+	where id not in (1026,812,1042);
+	run;
+	
+	proc sgplot data=batanastrait; 
+	reg x=zandrosteronem y=shapsm/group=hormone_group; 
+	where id not in (9999);
+	run; 
+	
+	
+/* STEROID TRAIT PREDICTORS OF BDI */
+
+proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id; 
+	model BDIm= zbmi zage afab mirena implant chc zp5m zp4m zallom zpregnam zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/ zthdocm zthdoc_3a5bm/ influence ; 
+	where id not in (623,1680,1346,403,1460);
+	run;
+	
+	proc print data=batanastrait; 
+	var id hormone_group afab; 
+	where id in (623,1680,1346,403,1460);
 	run;
 
-
-
-
-
-
-
-
-
+* Probing 3a5bthdoc - also not much going on; 
+	
+	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id; 
+	model BDIm= zthdoc_3a5bm / influence ; 
+	where id not in (339,647,244,1346,1026);
+	run;
+	
+	proc print data=batanastrait; 
+	var id hormone_group afab; 
+	where id in (339,647,244,1346,1026);
+	run;
+	
+	proc sgplot data=batanastrait; 
+	reg x=zthdoc_3a5bm y=BDIm/group=hormone_group; 
+	where id not in (9999);
+	run; 
+	
+	
 
 
 *[H-2] - HYPOTHESIS 2 TESTS ;
