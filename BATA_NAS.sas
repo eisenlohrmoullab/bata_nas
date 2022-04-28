@@ -1,7 +1,13 @@
-/*BATA 2022 NAS-IMMUNE-THREAT-SX - PREREGISTERED*/
+/*BATA 2022 NAS-IMMUNE-THREAT-SX - Tory Eisenlohr-Moul, PhD*/
+/* [SETTINGS] */
+
+*Set Graphics Options;
+
 ods graphics on / width=8in;
 ods graphics on / height=6in;
+
 *Set Working Project Folder - Coding, Data Edits, and Output;
+
 libname batanas "Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/03_code_dataedits_output";
 
 /* [D] DATA SECTION */
@@ -28,7 +34,8 @@ RUN;
 
 data nasrepro;
 	modify nasrepro;
-
+	drop p4;
+p4=prog_ng_ml; 
 	if subject_id="" then
 		delete;
 run;
@@ -66,7 +73,6 @@ run;
 
 data bmi;
 	modify bmi;
-
 	if subject_id="" then
 		delete;
 run;
@@ -91,7 +97,6 @@ FILENAME REFILE 'Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)
 PROC IMPORT DATAFILE=REFILE DBMS=XLSX OUT=hammer22 REPLACE;
 	GETNAMES=YES;
 RUN;
-
 
 *[D-7] Merge selfreport and nasrepro into temp1;
 
@@ -124,7 +129,7 @@ run;
 
 *[D-10] Merge temp2, hammer21, hammer22 into batanaspp, select only the variables we need, and PREP new variables;
 
-data batanaspp ;
+data batanaspp;
 	merge temp2 hammer21 hammer22;
 	by Subject_ID Scan;
 
@@ -149,7 +154,7 @@ data batanaspp ;
 	else
 		afab=0;
 
-		/*recode missing luteal to 0*/
+	/*recode missing luteal to 0*/
 	if luteal=999 then
 		luteal=0;
 
@@ -167,30 +172,56 @@ proc sort data=batanaspp out=batanaspp nodupkey;
 	by id visitnum;
 run;
 
-
-/*Save Reproductive Traits and re-merge*/ 
-
-data reprotraits (keep=id meno chc mirena implant);
-	set batanaspp; 
+/*Save Reproductive Traits and re-merge*/
+data reprotraits (keep=id meno ovsupphc mirena hormone_group);
+	set batanaspp;
 	where visitnum=0;
-	chc=bc_pill_patch; 
-if meno=. then meno=0;
-if hysterectomy=1 then meno=1; 
-if ovarectomy=1 then meno=1; 
-run; 
+	
+	ovsupphc=.;
+	if bc_pill_patch=1 then ovsupphc=1;
+	if implant=1 then ovsupphc=1;
+	if (bc_pill_patch+implant)=0 then ovsupphc=0; 
 
-data batanaspp; 
-set batanaspp; 
-drop meno bc_pill_patch mirena implant;
+	if meno=. then
+		meno=0;
+
+	if hysterectomy=1 then
+		meno=1;
+
+	if ovarectomy=1 then
+		meno=1;
+		
+		hormone_group='Naturally Cycling';
+
+	if bc_pill_patch=1 then
+		hormone_group='OvSuppHC';
+		
+		if implant=1 then
+		hormone_group='OvSuppHC';
+
+	if meno=1 then
+		hormone_group="Meno";
+
+	if Mirena=1 then
+		hormone_group='Mirena';
+
+	if afab=0 then
+		hormone_group='Male';
+run;
+
+data batanaspp;
+	set batanaspp;
+	drop meno bc_pill_patch mirena implant;
 run;
 
 data batanaspp (keep=id scan behav_wk age afab tx bmi SHAPS BAI BDI PSS 
 		prog_ng_ml p4 allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
-		etiocholanone etiocholanediol CRP IL6 TNFa meno Hormonal_Status luteal 
-		forward_count chc mirena implant BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 visitnum luteal); 
-merge batanaspp reprotraits; 
-by id; 
-run; 
+		etiocholanone etiocholanediol CRP IL6 TNFa meno Hormonal_Status hormone_group luteal 
+		forward_count OvSuppHC mirena BMI_final pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 
+		visitnum luteal);
+	merge batanaspp reprotraits;
+	by id;
+run;
 
 *[D-12] Sample-Standardize Variables;
 
@@ -216,12 +247,12 @@ run;
 
 %mend;
 
-%let ylist= SHAPS BAI BDI PSS p4 prog_ng_ml allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro samplestandardizerun;
-	%do i=1 %to 22;
+	%do i=1 %to 21;
 		%let yvar=%scan(&ylist, &i);
 		%samplestandardize(yvar=&yvar);
 	%end;
@@ -234,36 +265,10 @@ data batanaspp;
 	set batanaspp;
 
 	if allo>1000 then
-		allo=.;/*
-		if id=1582 then delete; 
-		if id=459 then delete; 
-		if id=392 and visitnum=0 then allo=.; 
-		if id=47 and visitnum=0 then allo=.; */
+		allo=.;
+
 run;
 
-/* Code Hormonal Status Trait variable and Re-merge*/
-data batanaspp;
-	set batanaspp;
-	hormone_group='Naturally Cycling';
-
-	if chc=1 then
-		hormone_group='CHC (Pill/Patch)';
-
-	if meno=1 then
-		hormone_group="Meno";
-
-	if Mirena=1 then
-		hormone_group='Mirena';
-
-	if implant=1 then
-		hormone_group='Progestin Implant';
-
-	if implant=1 then
-		hormone_group='Progestin Implant';
-
-	if afab=0 then
-		hormone_group='Male';
-run;
 
 *[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass;
 
@@ -281,17 +286,16 @@ run;
 		title "Hormonal Status Effect on Raw &yvar";
 		ods select boxplot;
 		run;
-		
-		proc sgpanel data=batanaspp; 
-		panelby hormone_group ;
-		reg x=visitnum y=&yvar/group=id; 
-		run; 
-		
-		
-		proc print data=batanaspp;
+
+	proc sgpanel data=batanaspp;
+		panelby hormone_group;
+		reg x=visitnum y=&yvar/group=id;
+	run;
+
+	proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
-		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal 
-			bmi tx;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
+			tx;
 		title "&yvar High Outliers >3SD";
 	run;
 
@@ -356,36 +360,36 @@ run;
 			tx;
 		title "REMAINING &yvar Low Outliers after initial removal of <-3SD and restandardization";
 	run;
-	
+
 	/*data batanaspp;
-		set batanaspp;
-
-		if z&yvar >=3 then
-			&yvar=.;
-
-		if z&yvar <=-3 then
-			&yvar=.;
-		z&yvar=&yvar;
+	set batanaspp;
+	
+	if z&yvar >=3 then
+	&yvar=.;
+	
+	if z&yvar <=-3 then
+	&yvar=.;
+	z&yvar=&yvar;
 	run;
-
+	
 	proc standard data=batanaspp out=batanaspp m=0 std=1;
-		var z&yvar;
+	var z&yvar;
 	run;
-
+	
 	proc univariate data=batanaspp;
-		var &yvar z&yvar;
-		histogram &yvar z&yvar/ barlabel=count;
-		ods select histogram;
-		title "&yvar (Outliers Removed - SECOND PASS)";*/
+	var &yvar z&yvar;
+	histogram &yvar z&yvar/ barlabel=count;
+	ods select histogram;
+	title "&yvar (Outliers Removed - SECOND PASS)";*/
 
 %mend;
 
-%let ylist= allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= allo pregna p4 p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro removeoutliersrun;
-	%do i=1 %to 16;
+	%do i=1 %to 17;
 		%let yvar=%scan(&ylist, &i);
 		%removeoutliers(yvar=&yvar);
 	%end;
@@ -400,16 +404,18 @@ data batanaspp;
 
 	/*Create Neurosteroid Ratios - AFTER outliers removed above*/
 	allop4=allo/p4;
+	lgallop4=log(allop4);
 	pregnap4=pregna/p4;
+		lgpregnap4=log(pregnap4);
 	allopregnap4=(allo+pregna)/p4;
+		lgallopregnap4=log(allopregnap4);
 	allop5=allo/p5;
+			lgallop5=log(allop5);
 	pregnap5=pregna/p5;
+			lgpregnap5=log(pregnap5);
 	allopregnap5=(allo+pregna)/p5;
-	allop4ng=allo/prog_ng_ml;
-	pregnap4ng=pregna/prog_ng_ml;
-	allopregnap4ng=(allo+pregna)/prog_ng_ml;
+			lgallopregnap5=log(allopregnap5);
 run;
-
 
 *[D-13] Macro to identify/remove ratio outliers;
 
@@ -422,7 +428,7 @@ run;
 	proc standard data=batanaspp out=batanaspp m=0 std=1;
 		var z&yvar;
 	run;
-	
+
 	proc univariate data=batanaspp;
 		var &yvar z&yvar;
 		histogram &yvar z&yvar/ barlabel=count;
@@ -436,16 +442,16 @@ run;
 		title "Hormonal Status Effect on Raw &yvar";
 		ods select boxplot;
 		run;
-		
-			proc sgpanel data=batanaspp; 
-		panelby hormone_group ;
-		reg x=visitnum y=&yvar/group=id; 
-		run; 
-		
-		proc print data=batanaspp;
+
+	proc sgpanel data=batanaspp;
+		panelby hormone_group;
+		reg x=visitnum y=&yvar/group=id;
+	run;
+
+	proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
-		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal 
-			bmi tx;
+		var id visitnum &yvar z&yvar afab age hormone_group forward_count luteal bmi 
+			tx;
 		title "&yvar High Outliers >3SD";
 	run;
 
@@ -501,20 +507,20 @@ run;
 		var id visitnum &yvar z&yvar afab age Hormone_Group luteal bmi tx;
 		title "REMAINING &yvar Low Outliers after initial removal of <-3SD and restandardization";
 	run;
-	
+
 	proc anova data=batanaspp;
 		class hormone_group;
 		model &yvar=hormone_group;
 		title "Hormonal Status Effect on OUTLIER-FREE (>3SD) &yvar";
 		ods select boxplot;
 		run;
-		
-			proc sgpanel data=batanaspp; 
-		panelby hormone_group ;
-		reg x=visitnum y=&yvar/group=id; 
-		run; 
-		
-		data batanaspp;
+
+	proc sgpanel data=batanaspp;
+		panelby hormone_group;
+		reg x=visitnum y=&yvar/group=id;
+	run;
+/*
+	data batanaspp;
 		set batanaspp;
 
 		if z&yvar >=3 then
@@ -534,22 +540,20 @@ run;
 		histogram &yvar z&yvar/ barlabel=count;
 		ods select histogram;
 		title "&yvar (Outliers Removed - SECOND PASS)";
-	run;
+	run;*/
 
 %mend;
 
-%let ylist= allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 
-		allopregnap4ng allop4ng pregnap4ng;
+%let ylist= allop4 lgallop4 pregnap4 lgpregnap4 allopregnap4 lgallopregnap4 allop5 lgallop5 pregnap5 lgpregnap5 allopregnap5 lgallopregnap5;
 
 %macro removeoutliersratiorun;
-	%do i=1 %to 9;
+	%do i=1 %to 12;
 		%let yvar=%scan(&ylist, &i);
 		%removeoutliersratio(yvar=&yvar);
 	%end;
 %mend;
 
 %removeoutliersratiorun;
-
 *[D-15] Saving Person Means for repeated measures and Sample Standardizing individual diffs in person means, as well as calculating state deviations;
 
 %macro meansanddevs (yvar=);
@@ -568,12 +572,41 @@ run;
 		var &yvar.zd;
 		by id;
 	run;
+	
+	data batanaspp; 
+	set batanaspp; 
+	z&yvar.d=&yvar.d; 
+	run;
+	
+	proc standard data=batanaspp out=batanaspp m=0 std=1; 
+	var z&yvar.d;
+	run;
+
+data batanaspp; 
+	set batanaspp; 
+	if z&yvar.d>3 then &yvar.d=.; 
+		if z&yvar.d<-3 then &yvar.d=.; 
+	run;
+	
+		proc print data=batanaspp; 
+		where z&yvar.d>3 and &yvar ne .; 
+		var id visitnum luteal afab &yvar z&yvar.d &yvar.d;
+		title "&yvar.d - High (>3sd) Outliers Removed"; 
+		run; 
+		
+		proc print data=batanaspp; 
+		where z&yvar.d<-3 and &yvar ne .; 
+		var id visitnum luteal afab &yvar z&yvar.d &yvar.d; 
+		title "&yvar.d - Low (<-3sd) Outliers Removed"; 
+		run; 
 
 	proc means data=batanaspp noprint;
 		var &yvar;
 		by id;
 		output out=&yvar.means mean=&yvar.m;
 	run;
+	
+	
 
 	data &yvar.means;
 		set &yvar.means;
@@ -599,18 +632,23 @@ run;
 
 %mend;
 
-%let ylist= luteal bmi SHAPS BAI BDI PSS prog_ng_ml p4 allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= luteal bmi SHAPS BAI BDI PSS p4 allo pregna p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
-		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 allopregnap4ng allop4ng pregnap4ng;
+		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5 
+lgallop4 lgpregnap4 lgallopregnap4 lgallop5 lgpregnap5 lgallopregnap5;
 
 %macro meansanddevsrun;
-	%do i=1 %to 33;
+	%do i=1 %to 35;
 		%let yvar=%scan(&ylist, &i);
 		%meansanddevs(yvar=&yvar);
 	%end;
 %mend;
 
 %meansanddevsrun;
+
+
+
+
 *[D-16] Saving one obs per person (trait);
 
 proc sort data=batanaspp out=batanastrait nodupkey;
@@ -619,12 +657,11 @@ run;
 
 *[D-17] Saving smaller dataset and creating zbmi and zage;
 
-data batanastrait (keep=id natcyc zbmi bmim chc mirena meno implant age 
-		zage afab tx SHAPSm BAIm BDIm PSSm p4m prog_ng_mlm allom pregnam p5m thdocm 
+data batanastrait (keep=id natcyc zbmi bmim OvSuppHC mirena meno implant hormone_group age zage 
+		afab tx SHAPSm BAIm BDIm PSSm p4m prog_ng_mlm allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m allopregnap4ngm allop4ngm 
-		pregnap4ngm);
+		allopregnap4m allop5m pregnap5m allopregnap5m lgallop4m lgpregnap4m lgallopregnap4m lgallop5m lgpregnap5m lgallopregnap5m);
 	set batanastrait;
 	zage=age;
 
@@ -664,73 +701,74 @@ run;
 
 %macro savetraj (yvar=);
 	proc mixed data=batanaspp covtest;
-		class id;
-		model &yvar=luteal zprog_ng_mlm prog_ng_mld behav_wk / solution;
+		class id visitnum(ref=first) natcyc(ref=first) mirena(ref=first);
+		model &yvar= behav_wk / solution;
 		random intercept behav_wk/subject=id s;
-		ods output solutionR=resp4timeest&yvar;
-	run;
+		repeated visitnum/subject=id type=ar(1);
+		ods output solutionR=timeest&yvar;
+	run; 
 
-	data intpr&yvar (keep=id intpr&yvar zintpr&yvar);
-		set resp4timeest&yvar;
-		intpr&yvar=.;
+	data int&yvar (keep=id int&yvar zint&yvar);
+		set timeest&yvar;
+		int&yvar=.;
 
 		if Effect="Intercept" then
-			intpr&yvar=Estimate;
+			int&yvar=Estimate;
 		else
 			delete;
-		zintpr&yvar=intpr&yvar;
+		zint&yvar=int&yvar;
 	run;
 
-	proc standard data=intpr&yvar out=intpr&yvar m=0 std=1;
-		var zintpr&yvar;
+	proc standard data=int&yvar out=int&yvar m=0 std=1;
+		var zint&yvar;
 	run;
 
-	data slopepr&yvar (keep=id slopepr&yvar zslopepr&yvar);
-		set resp4timeest&yvar;
-		slopepr&yvar=.;
+	data slope&yvar (keep=id slope&yvar zslope&yvar);
+		set timeest&yvar;
+		slope&yvar=.;
 
 		if Effect="behav_wk" then
-			slopepr&yvar=Estimate;
+			slope&yvar=Estimate;
 		else
 			delete;
-		zslopepr&yvar=slopepr&yvar;
+		zslope&yvar=slope&yvar;
 	run;
 
-	proc standard data=slopepr&yvar out=slopepr&yvar m=0 std=1;
-		var zslopepr&yvar;
+	proc standard data=slope&yvar out=slope&yvar m=0 std=1;
+		var zslope&yvar;
 	run;
 
 	data estimates;
-		merge estimates &yvar.means intpr&yvar slopepr&yvar /*int&yvar slope&yvar*/;
+		merge estimates &yvar.means int&yvar slope&yvar /*int&yvar slope&yvar*/;
 		by id;
 	run;
 
-	/* REMOVE outlier slope estimates (outside of 3 SDs) */
+	/* REMOVE outlier slope estimates (outside of 3 SDs) 
 	data estimates;
 		set estimates;
 
-		if -3>zslopepr&yvar then
-			zslopepr&yvar=.;
+		if -3>zslope&yvar then
+			zslope&yvar=.;
 
-		if zslopepr&yvar>3 then
-			zslopepr&yvar=.;
+		if zslope&yvar>3 then
+			zslope&yvar=.;
 
-		if -3>zslopepr&yvar then
-			slopepr&yvar=.;
+		if -3>zslope&yvar then
+			slope&yvar=.;
 
-		if zslopepr&yvar>3 then
-			slopepr&yvar=.;
-	run;
+		if zslope&yvar>3 then
+			slope&yvar=.;
+	run;*/
 
 %mend;
 
-%let ylist= SHAPS BAI BDI PSS allo pregna p5 thdoc thdoc_3a5b 
+%let ylist= SHAPS BAI BDI PSS allo pregna p4 p5 thdoc thdoc_3a5b 
 		androsterone androstanediol etiocholanone etiocholanediol CRP IL6 TNFa 
 		pcing7 pcing6 L_Amy_cp8 R_Amy_cp8 allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5
-		allopregnap4ng allop4ng pregnap4ng;
+	lgallop4 lgpregnap4 lgallopregnap4 lgallop5 lgpregnap5 lgallopregnap5;
 
 %macro savetrajrun;
-	%do i=1 %to 29;
+	%do i=1 %to 33;
 		%let yvar=%scan(&ylist, &i);
 		%savetraj(yvar=&yvar);
 	%end;
@@ -747,33 +785,28 @@ data batanastrait;
 		delete;
 run;
 
-/*SAVE DATASETS*/ 
+/*SAVE DATASETS*/
+data batanas.batanaspp;
+	set batanaspp;
+run;
 
-data batanas.batanaspp; 
-set batanaspp; 
-run; 
-
-data batanas.batanastrait; 
-set batanastrait; 
+data batanas.batanastrait;
+	set batanastrait;
 run;
 
 /************************************************************/
 /*END DATA PREP*/
 /************************************************************/
-
-/*Load Prepped Data*/ 
+/*Load Prepped Data*/
 libname batanas "Y:/Library/CloudStorage/Box-Box/00 - CLEAR Lab (Locked Folders)/02 - Data Management, Analysis, and Papers/Studies_Projects/BATA/03_analytic_projects/BATA_NAS/03_code_dataedits_output";
-data batanastrait; 
-set batanas.batanastrait; 
-run; 
 
-data batanaspp; 
-set batanas.batanaspp; 
-run; 
+data batanastrait;
+	set batanas.batanastrait;
+run;
 
-
-
-
+data batanaspp;
+	set batanas.batanaspp;
+run;
 
 *[A-1] - Print Between-Person Trait Dataset;
 
@@ -783,8 +816,10 @@ run;
 *[A-2] - Output Frequencies for categorical traits;
 
 proc freq data=batanastrait;
-	table id afab natcyc tx natcyc*tx;
+	table id afab natcyc tx tx*hormone_group;
 run;
+
+
 
 *[A-3] - Output Means for continuous traits;
 
@@ -800,18 +835,18 @@ run;
 *[A-3.5] - Output Means for Estimates;
 
 proc means data=estimates;
-	var intprshaps slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss 
-		slopeprpss intprallo slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 
-		intprthdoc slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 intprallop4 
-		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
-		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
-		intprallopregnap5 slopeprallopregnap5 slopeallopregnap4ng slopeallop4ng 
-		slopepregnap4ng intallopregnap4ng intallop4ng intpregnap4ng;
+	var intshaps slopeshaps intbai slopebai intbdi slopebdi intpss 
+		slopepss intallo slopeallo integna slopepregna intp5 slopep5 
+		intthdoc slopethdoc intthdoc_3a5b slopethdoc_3a5b intandrosterone 
+		slopeandrosterone intandrostanediol slopeandrostanediol 
+		intetiocholanone slopeetiocholanone intetiocholanediol 
+		slopeetiocholanediol intcrp slopecrp intil6 slopeil6 inttnfa 
+		slopetnfa intpcing7 slopepcing7 intpcing6 slopepcing6 
+		intL_Amy_cp8 slopeL_Amy_cp8 intR_Amy_cp8 slopeR_Amy_cp8 intallop4 
+		slopeallop4 integnap4 slopepregnap4 intallopregnap4 
+		slopeallopregnap4 intallop5 slopeallop5 integnap5 slopepregnap5 
+		intallopregnap5 slopeallopregnap5 slopeallopregnap4ng slopeallop4ng 
+		slopeegnap4ng intallopregnap4ng intallop4ng integnap4ng;
 run;
 
 *[A-4] - Output Histograms for continuous traits;
@@ -820,39 +855,39 @@ proc univariate data=batanastrait;
 	var zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m intprshaps slopeprshaps 
-		intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
-		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8 /*intprallop4
-		slopeprallop4*/
-		intprpregnap4 slopeprpregnap4 intprallopregnap4 slopeprallopregnap4 
-		intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 intprallopregnap5 
-		slopeprallopregnap5 slopeallopregnap4ng slopeallop4ng slopepregnap4ng 
-		intallopregnap4ng intallop4ng intpregnap4ng;
+		allopregnap4m allop5m pregnap5m allopregnap5m intshaps slopeshaps 
+		intbai slopebai intbdi slopebdi intpss slopepss intallo 
+		slopeallo integna slopepregna intp5 slopep5 intthdoc 
+		slopethdoc intthdoc_3a5b slopethdoc_3a5b intandrosterone 
+		slopeandrosterone intandrostanediol slopeandrostanediol 
+		intetiocholanone slopeetiocholanone intetiocholanediol 
+		slopeetiocholanediol intcrp slopecrp intil6 slopeil6 inttnfa 
+		slopetnfa intpcing7 slopepcing7 intpcing6 slopepcing6 
+		intL_Amy_cp8 slopeL_Amy_cp8 intR_Amy_cp8 slopeR_Amy_cp8 /*intallop4
+		slopeallop4*/
+		integnap4 slopepregnap4 intallopregnap4 slopeallopregnap4 
+		intallop5 slopeallop5 integnap5 slopepregnap5 intallopregnap5 
+		slopeallopregnap5 slopeallopregnap4ng slopeallop4ng slopeegnap4ng 
+		intallopregnap4ng intallop4ng integnap4ng;
 	histogram zbmi bmim age zage SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m 
 		thdocm thdoc_3a5bm androsteronem androstanediolm etiocholanonem 
 		etiocholanediolm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m 
-		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m intprshaps 
-		slopeprshaps intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss 
-		intprallo slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m intshaps 
+		slopeshaps intbai slopebai intbdi slopebdi intpss slopepss 
+		intallo slopeallo integna slopepregna intp5 slopep5 intthdoc 
+		slopethdoc intthdoc_3a5b slopethdoc_3a5b intandrosterone 
+		slopeandrosterone intandrostanediol slopeandrostanediol 
+		intetiocholanone slopeetiocholanone intetiocholanediol 
+		slopeetiocholanediol intcrp slopecrp intil6 slopeil6 inttnfa 
+		slopetnfa intpcing7 slopepcing7 intpcing6 slopepcing6 
+		intL_Amy_cp8 slopeL_Amy_cp8 intR_Amy_cp8 slopeR_Amy_cp8
 
-		/*intprallop4
-		slopeprallop4*/
-		intprpregnap4 slopeprpregnap4 intprallopregnap4 slopeprallopregnap4 
-		intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 intprallopregnap5 
-		slopeprallopregnap5 slopeallopregnap4ng slopeallop4ng slopepregnap4ng 
-		intallopregnap4ng intallop4ng intpregnap4ng;
+		/*intallop4
+		slopeallop4*/
+		integnap4 slopepregnap4 intallopregnap4 slopeallopregnap4 
+		intallop5 slopeallop5 integnap5 slopepregnap5 intallopregnap5 
+		slopeallopregnap5 slopeallopregnap4ng slopeallop4ng slopeegnap4ng 
+		intallopregnap4ng intallop4ng integnap4ng;
 	ods select histogram;
 run;
 
@@ -862,29 +897,30 @@ proc corr data=batanastrait spearman best=15;
 	var afab natcyc age bmim SHAPSm BAIm BDIm PSSm p4m allom pregnam p5m thdocm 
 		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
 		CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m intprshaps slopeprshaps 
-		intprbai slopeprbai intprbdi slopeprbdi intprpss slopeprpss intprallo 
-		slopeprallo intprpregna slopeprpregna intprp5 slopeprp5 intprthdoc 
-		slopeprthdoc intprthdoc_3a5b slopeprthdoc_3a5b intprandrosterone 
-		slopeprandrosterone intprandrostanediol slopeprandrostanediol 
-		intpretiocholanone slopepretiocholanone intpretiocholanediol 
-		slopepretiocholanediol intprcrp slopeprcrp intpril6 slopepril6 intprtnfa 
-		slopeprtnfa intprpcing7 slopeprpcing7 intprpcing6 slopeprpcing6 
-		intprL_Amy_cp8 slopeprL_Amy_cp8 intprR_Amy_cp8 slopeprR_Amy_cp8
-		/*intprallop4*/
-		slopeprallop4 intprpregnap4 slopeprpregnap4 intprallopregnap4 
-		slopeprallopregnap4 intprallop5 slopeprallop5 intprpregnap5 slopeprpregnap5 
-		intprallopregnap5 slopeprallopregnap5 slopeallopregnap4ng slopeallop4ng 
-		slopepregnap4ng intallopregnap4ng intallop4ng intpregnap4ng;
+		allopregnap4m allop5m pregnap5m allopregnap5m intshaps slopeshaps 
+		intbai slopebai intbdi slopebdi intpss slopepss intallo 
+		slopeallo integna slopepregna intp5 slopep5 intthdoc 
+		slopethdoc intthdoc_3a5b slopethdoc_3a5b intandrosterone 
+		slopeandrosterone intandrostanediol slopeandrostanediol 
+		intetiocholanone slopeetiocholanone intetiocholanediol 
+		slopeetiocholanediol intcrp slopecrp intil6 slopeil6 inttnfa 
+		slopetnfa intpcing7 slopepcing7 intpcing6 slopepcing6 
+		intL_Amy_cp8 slopeL_Amy_cp8 intR_Amy_cp8 slopeR_Amy_cp8
+		/*intallop4*/
+		slopeallop4 integnap4 slopepregnap4 intallopregnap4 
+		slopeallopregnap4 intallop5 slopeallop5 integnap5 slopepregnap5 
+		intallopregnap5 slopeallopregnap5 slopeallopregnap4ng slopeallop4ng 
+		slopeegnap4ng intallopregnap4ng intallop4ng integnap4ng;
 run;
-
-
 
 *[A-6] - Within-Person Descriptives;
 
 proc freq data=batanaspp;
 	table luteal visitnum luteal*visitnum;
 run;
+
+
+
 
 %macro icc (yvar=);
 	proc mixed data=batanaspp covtest;
@@ -896,12 +932,12 @@ run;
 		/*ods select nobs covparms solutionf ; */
 		title "&yvar - Null Model Random Intercept Only";
 	run;
-	
+
 	proc mixed data=batanaspp covtest;
 		class id hormone_group (ref='Male');
-		model &yvar= zage zbmi hormone_group / solution ddfm=kenwardroger2;
+		model &yvar=zage zbmi hormone_group / solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
-		where id not in (1346,1702) /*Removing those in Surgical Menopause*/ ;
+		where id not in (1346, 1702) /*Removing those in Surgical Menopause*/;
 		ods output covparms=icctemp1;
 
 		/*ods select nobs covparms solutionf ; */
@@ -909,7 +945,8 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) 
+			hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 
@@ -918,7 +955,8 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) 
+			hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
 
@@ -927,7 +965,8 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) 
+			hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
 		repeated visitnum/subject=id type=ar(1);
@@ -937,7 +976,8 @@ run;
 	run;
 
 	proc mixed data=batanaspp covtest;
-		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) hormone_group (ref=first);
+		class id visitnum afab (ref=first) natcyc (ref=first) luteal (ref=first) 
+			hormone_group (ref=first);
 		model &yvar=behav_wk / solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		repeated visitnum/subject=id type=ar(1);
@@ -1017,7 +1057,7 @@ run;
 %iccrun;
 
 proc corr data=batanaspp;
-	var prog_ng_ml allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
+	var p4 allo pregna p5 thdoc thdoc_3a5b androsterone androstanediol 
 		etiocholanone etiocholanediol;
 run;
 
@@ -1035,51 +1075,80 @@ neurosteroids (and neurosteroid ratios) will be associated with positive
 outcomes at both the between and within-person levels.*/
 /*Printing Scan Days Dataset to see  Missing Values*/
 
+proc freq data=batanastrait; 
+table hormone_group; 
+run; 
+
 
 %macro covar(xvar=, yvar=);
 
+	proc sgplot data=batanaspp;
+		reg x=&xvar.d y=&yvar.d/group=id;
+		reg x=&xvar.d y=&yvar.d/lineattrs=(thickness=5);
+		title "Within-Person Assoc: &xvar and &yvar";
+	run;
+	
+	proc sgpanel data=batanaspp;
+	panelby hormone_group;
+		reg x=&xvar.d y=&yvar.d/group=id;
+		reg x=&xvar.d y=&yvar.d/lineattrs=(thickness=5);
+		title "by Hormone Group: Within-Person Assoc: &xvar and &yvar";
+	run;
 
+	proc sgplot data=batanaspp;
+		reg x=z&xvar.m y=&yvar.m;
+		title "Between-Person Assoc: &xvar and &yvar";
+	run;
+	
+	proc sgpanel data=batanaspp;
+	panelby hormone_group;
+		reg x=z&xvar.m y=&yvar.m;
+		title "by Hormone Group: Between-Person Assoc: &xvar and &yvar";
+	run;
+	
 	proc mixed data=batanaspp covtest;
-		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
-		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
+		class id visitnum (ref=first) afab (ref=first) OvSuppHC (ref=first) 
+			mirena (ref=first) meno (ref=first) luteal (ref=first);
+		model &yvar=behav_wk zbmi zage afab mirena OvSuppHC meno afab luteal 
+			z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select ConvergenceStatus covparms solutionf;
 		title "Predicting &yvar from Between- and Within-Person Variance in &xvar";
 	run;
-	
-	proc mixed data=batanaspp covtest ;
-		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
-		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
+
+	proc mixed data=batanaspp covtest;
+		class id visitnum (ref=first) afab (ref=first) OvSuppHC (ref=first) 
+			mirena (ref=first) meno (ref=first) luteal (ref=first);
+		model &yvar=behav_wk zbmi zage afab mirena OvSuppHC meno afab luteal 
+			z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept /subject=id type=vc;
 		ods select ConvergenceStatus covparms solutionf;
 		repeated visitnum /subject=id type=ar(1);
 		title "Predicting &yvar from Between- and Within-Person Variance in &xvar - FIXED SLOPE + REPEATED";
 	run;
-	
-	proc mixed data=batanaspp covtest ;
-		class id visitnum (ref=first) afab (ref=first) chc (ref=first) mirena (ref=first) implant (ref=first) meno (ref=first) luteal (ref=first) ;
-		model &yvar=behav_wk zbmi zage afab mirena chc implant meno afab luteal z&xvar.m &xvar.d/ solution 
-			ddfm=kenwardroger2;
+
+	proc mixed data=batanaspp covtest;
+		class id visitnum (ref=first) afab (ref=first) OvSuppHC (ref=first) 
+			mirena (ref=first) meno (ref=first) luteal (ref=first);
+		model &yvar=behav_wk zbmi zage afab mirena OvSuppHC meno afab luteal 
+			z&xvar.m &xvar.d/ solution ddfm=kenwardroger2;
 		random intercept behav_wk/subject=id type=vc;
 		ods select ConvergenceStatus covparms solutionf;
 		repeated visitnum /subject=id type=ar(1);
 		title "Predicting &yvar from Between- and Within-Person Variance in &xvar - RANDOM SLOPE + REPEATED";
 	run;
-	
-	
+
 %mend;
 
-%let xlist= allo pregna p5 thdoc thdoc_3a5b
-androsterone androstanediol etiocholanone etiocholanediol allop4 pregnap4 allopregnap4 allop5 pregnap5 allopregnap5;
+%let xlist= lgallop4 lgpregnap4 lgallopregnap4 lgallop5 lgpregnap5 lgallopregnap5 allo pregna p5 thdoc thdoc_3a5b
+androsterone androstanediol etiocholanone etiocholanediol ;
 %let ylist= SHAPS BAI BDI PSS CRP IL6 TNFa
 pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %macro covarrun;
-	%do j=1 %to 15 /*15*/;
+	%do j=1 %to 15 /*15 predictors*/;
 
-		%do i=1 %to 11 /*11*/;
+		%do i=1 %to 11 /*11 outcomes*/;
 			%let yvar=%scan(&ylist, &i);
 			%let xvar=%scan(&xlist, &j);
 			%covar(yvar=&yvar, xvar=&xvar);
@@ -1089,100 +1158,100 @@ pcing7 pcing6 L_Amy_cp8 R_Amy_cp8;
 
 %covarrun;
 
-
-proc sort data=batanaspp out=batanastrait nodupkey; 
-by id; 
-run; 
+proc sort data=batanaspp out=batanastrait nodupkey;
+	by id;
+run;
 
 proc print data=batanastrait;
-var afab mirena chc implant zage zbmi p4m prog_ng_mlm allom pregnam p5m thdocm thdoc_3a5bm androsteronem 
-		androstanediolm etiocholanonem etiocholanediolm allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m allopregnap4ngm allop4ngm 
-		pregnap4ngm SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
-		R_Amy_cp8m;
-run; 
+	var afab mirena OvSuppHC implant zage zbmi p4m prog_ng_mlm allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m 
+		allopregnap4ngm allop4ngm pregnap4ngm SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam 
+		pcing7m pcing6m L_Amy_cp8m R_Amy_cp8m;
+run;
 
 proc corr data=batanastrait spearman best=10;
-	var afab  implant mirena chc p4m prog_ng_mlm allom pregnam p5m thdocm thdoc_3a5bm androsteronem 
-		androstanediolm etiocholanonem etiocholanediolm allop4m pregnap4m 
-		allopregnap4m allop5m pregnap5m allopregnap5m ;
+	var afab implant mirena OvSuppHC p4m prog_ng_mlm allom pregnam p5m thdocm 
+		thdoc_3a5bm androsteronem androstanediolm etiocholanonem etiocholanediolm 
+		allop4m pregnap4m allopregnap4m allop5m pregnap5m allopregnap5m;
 	with SHAPSm BAIm BDIm PSSm CRPm IL6m TNFam pcing7m pcing6m L_Amy_cp8m 
 		R_Amy_cp8m;
 run;
 
 /* STEROID TRAIT PREDICTORS OF SHAPS */
+proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id;
+	model SHAPSm=zbmi zage afab mirena implant OvSuppHC zp5m zp4m zallom zpregnam 
+		zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/
+		zthdocm zthdoc_3a5bm/ influence;
+	where id not in (436, 339, 106, 389, 403, 1026, 623, 194, 1042, 852, 1252, 
+		1702);
+	run;
+
+proc print data=batanastrait;
+	var id hormone_group afab;
+	where id in (436, 339, 106, 389, 403, 1026, 623, 194, 1042, 852, 1252, 1702);
+run;
+
+* Probing PREGNAm - significant;
 
 proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
-	id id; 
-	model SHAPSm= zbmi zage afab mirena implant chc zp5m zp4m zallom zpregnam zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/ zthdocm zthdoc_3a5bm/ influence ; 
-	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
+	id id;
+	model SHAPSm=zpregnam / influence;
+	where id not in (436, 339, 106, 389, 403, 1026, 623, 194, 1042, 852, 1252, 
+		1702);
 	run;
-	
-proc print data=batanastrait; 
-	var id hormone_group afab; 
-	where id in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
-	run;	
 
-* Probing PREGNAm - significant; 
-	
-	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
-	id id; 
-	model SHAPSm= zpregnam / influence ; 
-	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
+proc sgplot data=batanastrait;
+	reg x=zpregnam y=shapsm/group=hormone_group;
+	where id not in (436, 339, 106, 389, 403, 1026, 623, 194, 1042, 852, 1252, 
+		1702);
+run;
+
+* Probing ANDROSTERONEm - not much going on;
+
+proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id;
+	model SHAPSm=zandrosteronem / influence;
+	where id not in (1026, 812, 1042);
 	run;
-	
-	proc sgplot data=batanastrait; 
-	reg x=zpregnam y=shapsm/group=hormone_group; 
-	where id not in (436,339,106,389,403,1026,623,194,1042,852,1252,1702);
-	run; 
-	
-* Probing ANDROSTERONEm - not much going on; 
-	
-	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
-	id id; 
-	model SHAPSm= zandrosteronem / influence ; 
-	where id not in (1026,812,1042);
-	run;
-	
-	proc sgplot data=batanastrait; 
-	reg x=zandrosteronem y=shapsm/group=hormone_group; 
+
+proc sgplot data=batanastrait;
+	reg x=zandrosteronem y=shapsm/group=hormone_group;
 	where id not in (9999);
-	run; 
-	
-	
+run;
+
 /* STEROID TRAIT PREDICTORS OF BDI */
+proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
+	id id;
+	model BDIm=zbmi zage afab mirena implant OvSuppHC zp5m zp4m zallom zpregnam 
+		zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/
+		zthdocm zthdoc_3a5bm/ influence;
+	where id not in (623, 1680, 1346, 403, 1460);
+	run;
+
+proc print data=batanastrait;
+	var id hormone_group afab;
+	where id in (623, 1680, 1346, 403, 1460);
+run;
+
+* Probing 3a5bthdoc - also not much going on;
 
 proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
-	id id; 
-	model BDIm= zbmi zage afab mirena implant chc zp5m zp4m zallom zpregnam zandrostanediolm zandrosteronem zetiocholanonem /*zetiocholanediolm*/ zthdocm zthdoc_3a5bm/ influence ; 
-	where id not in (623,1680,1346,403,1460);
-	run;
-	
-	proc print data=batanastrait; 
-	var id hormone_group afab; 
-	where id in (623,1680,1346,403,1460);
+	id id;
+	model BDIm=zthdoc_3a5bm / influence;
+	where id not in (339, 647, 244, 1346, 1026);
 	run;
 
-* Probing 3a5bthdoc - also not much going on; 
-	
-	proc reg data=batanastrait plots(label)=(rstudentbyleverage cooksd fitplot);
-	id id; 
-	model BDIm= zthdoc_3a5bm / influence ; 
-	where id not in (339,647,244,1346,1026);
-	run;
-	
-	proc print data=batanastrait; 
-	var id hormone_group afab; 
-	where id in (339,647,244,1346,1026);
-	run;
-	
-	proc sgplot data=batanastrait; 
-	reg x=zthdoc_3a5bm y=BDIm/group=hormone_group; 
+proc print data=batanastrait;
+	var id hormone_group afab;
+	where id in (339, 647, 244, 1346, 1026);
+run;
+
+proc sgplot data=batanastrait;
+	reg x=zthdoc_3a5bm y=BDIm/group=hormone_group;
 	where id not in (9999);
-	run; 
-	
-	
-
+run;
 
 *[H-2] - HYPOTHESIS 2 TESTS ;
 
@@ -1217,27 +1286,27 @@ interest, we will engage one of these two strategies. */
 /* Does sex influence change over time in any variable? --> Only THCOC3a5b, greater inc in M */
 proc ttest data=batanastrait;
 	class afab;
-	var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 
-		slopeprthdoc slopeprthdoc_3a5b slopeprandrosterone slopeprandrostanediol 
-		slopepretiocholanone slopepretiocholanediol slopeprcrp slopepril6 slopeprtnfa 
-		slopeprpcing7 slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
+	var slopeshaps slopebdi slopepss slopeallo slopepregna slopep5 
+		slopethdoc slopethdoc_3a5b slopeandrosterone slopeandrostanediol 
+		slopeetiocholanone slopeetiocholanediol slopecrp slopeil6 slopetnfa 
+		slopepcing7 slopepcing6 slopeL_Amy_cp8 slopeR_Amy_cp8
 
-		/*intprallop4 slopeprallop4*/
-		slopeprpregnap4 slopeprallopregnap4 slopeprallop5 slopeprpregnap5 
-		slopeprallopregnap5;
+		/*intallop4 slopeallop4*/
+		slopepregnap4 slopeallopregnap4 slopeallop5 slopepregnap5 
+		slopeallopregnap5;
 run;
 
 /* Does naturally cycling status influence change over time in any variable? -->  */
 proc ttest data=batanastrait;
 	class natcyc;
-	var slopeprshaps slopeprbdi slopeprpss slopeprallo slopeprpregna slopeprp5 
-		slopeprthdoc slopeprthdoc_3a5b slopeprandrosterone slopeprandrostanediol 
-		slopepretiocholanone slopepretiocholanediol slopeprcrp slopepril6 slopeprtnfa 
-		slopeprpcing7 slopeprpcing6 slopeprL_Amy_cp8 slopeprR_Amy_cp8
+	var slopeshaps slopebdi slopepss slopeallo slopepregna slopep5 
+		slopethdoc slopethdoc_3a5b slopeandrosterone slopeandrostanediol 
+		slopeetiocholanone slopeetiocholanediol slopecrp slopeil6 slopetnfa 
+		slopepcing7 slopepcing6 slopeL_Amy_cp8 slopeR_Amy_cp8
 
-		/*intprallop4 slopeprallop4*/
-		slopeprpregnap4 slopeprallopregnap4 slopeprallop5 slopeprpregnap5 
-		slopeprallopregnap5;
+		/*intallop4 slopeallop4*/
+		slopepregnap4 slopeallopregnap4 slopeallop5 slopepregnap5 
+		slopeallopregnap5;
 run;
 
 /*Growth model macro predicting degree of change over time from slope of other variables*/
@@ -1249,20 +1318,20 @@ run;
 
 	proc corr data=batanastrait spearman;
 		partial afab natcyc zbmi zage;
-		var &xvar.m intpr&xvar slopepr&xvar;
-		with &yvar.m intpr&yvar slopepr&yvar;
+		var &xvar.m int&xvar slope&xvar;
+		with &yvar.m int&yvar slope&yvar;
 		where z&xvar.m<3 and z&yvar.m<3;
 	run;
 
 	proc mixed data=batanaspp covtest;
 		class id afab (ref=first) natcyc (ref=first) luteal (ref=first);
 		model &yvar=behav_wk zbmi afab natcyc zage luteal 
-			zintpr&xvar /*zintpr&xvar*behav_wk*/
-			zslopepr&xvar zslopepr&xvar*behav_wk/ solution;
+			zint&xvar /*zint&xvar*behav_wk*/
+			zslope&xvar zslope&xvar*behav_wk/ solution;
 		random intercept behav_wk/subject=id type=vc;
 		ods select covparms solutionf;
 		title "SLOPE of &xvar * TIME = &yvar";
-		where -3<zslopepr&xvar<3 and -3<zslopepr&yvar<3;
+		where -3<zslope&xvar<3 and -3<zslope&yvar<3;
 	run;
 
 	proc sgplot data=batanaspp;
@@ -1298,47 +1367,47 @@ run;
 
 proc reg data=batanastrait plots(label) = (fitplot rstudentbyleverage);
 id id;
-model slopeprshaps= zslopeprallo ;
+model slopeshaps= zslopeallo ;
 where natcyc=0 and id not in (1017);
 run; */
 /*PREGNA*/
 proc print data=batanastrait;
-	var id zslopeprpregna zslopeprshaps;
+	var id zslopepregna zslopeshaps;
 run;
 
 *pregna-shaps - r2=.06, robust to sex and natcyc;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprshaps=zslopeprpregna;
+	model slopeshaps=zslopepregna;
 	where id not in (741, 982, 1582, 1630);
 	run;
 	*pregna-il6 - r2=.05, males r2=.36, females r2=.04;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopepril6=zslopeprpregna;
+	model slopeil6=zslopepregna;
 	where id not in (389, 456, 569, 982, 1582, 1630);
 	run;
 	*pregna-Ramyc8 - r2=.19, robust to sex and natcyc;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprR_Amy_cp8=zslopeprpregna;
+	model slopeR_Amy_cp8=zslopepregna;
 	where id not in (456, 741, 949, 982, 1346, 1504, 1582, 1630);
 	run;
 	*pregna-Lamyc8 - r2=.06, stronger in males, robust to natcyc;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprL_Amy_cp8=zslopeprpregna;
+	model slopeL_Amy_cp8=zslopepregna;
 	where id not in (647, 741, 949, 982, 1582, 1630);
 	run;
 	*pregna-CRP - NOT SIG - had been marginal in dev covary H1 models;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprCRP=zslopeprpregna;
+	model slopeCRP=zslopepregna;
 	where id not in (75, 104, 247, 569, 720, 741, 847, 982, 949, 1346, 1582, 1630);
 	run;
 
@@ -1349,21 +1418,21 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprBDI=slopeprp5;
+	model slopeBDI=slopep5;
 	where id not in (459, 104, 741, 244, 847, 1346, 1465, 1504, 982);
 	run;
 	*p5-CRP - not sig ;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprCRP=slopeprp5;
+	model slopeCRP=slopep5;
 	where id not in (847, 1603, 459, 1465);
 	run;
 	*p5-amygL - not sig ;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 	id id;
-	model slopeprL_Amy_cp8=slopeprp5;
+	model slopeL_Amy_cp8=slopep5;
 	where id not in (847, 741);
 	run;
 	*p5-amygR - robust to eliminating high leverage values;
@@ -1371,7 +1440,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprR_Amy_cp8=slopeprp5;
+	model slopeR_Amy_cp8=slopep5;
 	where id not in (329, 741, 459, 847, 1346, 1465, 1504, 1603);
 	run;
 
@@ -1380,14 +1449,14 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprSHAPS=slopeprthdoc_3a5b;
+	model slopeSHAPS=slopethdoc_3a5b;
 	where id not in (812, 1460, 945, 392, 1783);
 	run;
 	*thdoc3a5b-bdi - not sig;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprBDI=slopeprthdoc_3a5b;
+	model slopeBDI=slopethdoc_3a5b;
 	where id not in (392, 1783, 945, 1460, 812, 1346, 623, 1702, 387);
 	run;
 
@@ -1396,28 +1465,28 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprBDI=slopeprandrosterone;
+	model slopeBDI=slopeandrosterone;
 	where id not in (456, 1680, 1582);
 	run;
 	*andro-pcing6 - not sig;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprpcing6=slopeprandrosterone;
+	model slopepcing6=slopeandrosterone;
 	where id not in (170, 456, 247, 403, 1582, 1680, 549);
 	run;
 	*andro-amyL - not sig;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprL_Amy_cp8=slopeprandrosterone;
+	model slopeL_Amy_cp8=slopeandrosterone;
 	where id not in (949, 877, 1680);
 	run;
 	*andro-amyR - sig after removing leverage values, r2=.14;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprR_Amy_cp8=slopeprandrosterone;
+	model slopeR_Amy_cp8=slopeandrosterone;
 	where id not in (877, 247, 456, 1680, 403, 1504);
 	run;
 
@@ -1426,21 +1495,21 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprbdi=slopeprandrostanediol;
+	model slopebdi=slopeandrostanediol;
 	where id not in (199, 104, 329, 1346, 1582, 403);
 	run;
 	*androstanediol-SHAPS - not sig ;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprshaps=slopeprandrostanediol;
+	model slopeshaps=slopeandrostanediol;
 	where id not in (1633, 403);
 	run;
 	*androstanediol-amyR - not sig ;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprR_Amy_cp8=slopeprandrostanediol;
+	model slopeR_Amy_cp8=slopeandrostanediol;
 	where id not in (1346, 1504, 329);
 	run;
 	*androstanediol-amyL - r2=.07, NS in females;
@@ -1448,7 +1517,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprL_Amy_cp8=slopeprandrostanediol;
+	model slopeL_Amy_cp8=slopeandrostanediol;
 	where id not in (329, 403);
 	run;
 
@@ -1457,14 +1526,14 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprbdi=slopepretiocholanone;
+	model slopebdi=slopeetiocholanone;
 	where id not in (456, 549, 741, 847, 1347, 1706);
 	run;
 	*etiocholanolone-SHAPS - r2=.11 , males r2=.30 ;
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprshaps=slopepretiocholanone;
+	model slopeshaps=slopeetiocholanone;
 	where id not in (456, 741, 847);
 	run;
 	*etiocholanolone-PSS - small, marginal;
@@ -1473,7 +1542,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprpss=slopepretiocholanone;
+	model slopepss=slopeetiocholanone;
 	where id not in (233, 456, 847, 1347, 549);
 	run;
 
@@ -1482,7 +1551,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprbdi=slopepretiocholanediol;
+	model slopebdi=slopeetiocholanediol;
 	where id not in (549, 244, 741, 329, 1680, 1346, 389, 105, 1124, 1582, 23);
 	run;
 	*etiocholanediol-SHAPS - NOT SIG in either sex;
@@ -1490,7 +1559,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprshaps=slopepretiocholanediol;
+	model slopeshaps=slopeetiocholanediol;
 	where id not in (877, 1504, 1783, 389, 741, 244, 329, 1680, 549, 105, 647, 
 		1124, 141, 23);
 	run;
@@ -1499,7 +1568,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprCRP=slopepretiocholanediol;
+	model slopeCRP=slopeetiocholanediol;
 	where id not in (549, 741, 1680, 244, 329, 389, 105, 1504, 1633) and afab=1;
 	run;
 	*etiocholanediol-IL6 - NOT SIG in either sex;
@@ -1507,7 +1576,7 @@ proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 
 proc reg data=batanastrait plots(label)=(fitplot rstudentbyleverage cooksd);
 	id id;
-	model slopeprIL6=slopepretiocholanediol;
+	model slopeIL6=slopeetiocholanediol;
 	where id not in (329, 389, 244, 741, 1680, 549, 105, 23, 1465, 1124, 855) and 
 		afab=1;
 	run;
