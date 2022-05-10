@@ -270,7 +270,7 @@ data batanaspp;
 run;
 
 
-*[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass;
+*[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass - REMOVAL CURRENTLY OFF*;
 
 %macro removeoutliers (yvar=);
 	proc univariate data=batanaspp;
