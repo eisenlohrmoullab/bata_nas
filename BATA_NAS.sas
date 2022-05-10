@@ -270,7 +270,7 @@ data batanaspp;
 run;
 
 
-*[D-13] Macro to remove biomarker outliers - see above for first outlier removal pass;
+*[D-13] TURNED THIS OFF -- Macro to remove biomarker outliers - see above for first outlier removal pass*;
 
 %macro removeoutliers (yvar=);
 	proc univariate data=batanaspp;
@@ -306,7 +306,7 @@ run;
 		title "&yvar Low Outliers <-3SD";
 	run;
 
-	proc print data=batanaspp;
+	/*proc print data=batanaspp;
 		where z&yvar>3 and &yvar ne .;
 		var id visitnum &yvar z&yvar afab age hormone_group luteal bmi tx;
 		title "REMOVED: &yvar High Outliers";
@@ -380,7 +380,7 @@ run;
 	var &yvar z&yvar;
 	histogram &yvar z&yvar/ barlabel=count;
 	ods select histogram;
-	title "&yvar (Outliers Removed - SECOND PASS)";*/
+	title "&yvar (Outliers Removed - SECOND PASS)";*/*/
 
 %mend;
 
