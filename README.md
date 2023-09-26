@@ -3,6 +3,7 @@
 Please see the CLEAR Lab Scientific Manual to learn how to use the data files in the CLEAR Lab: https://docs.google.com/document/d/1D55irUON7pOKBVRUCCQbciXwiY5Cemi95ML85OAv6EM/edit#
 
 Date of project start: 2022-02-22
+Re-started work: 2023-09-26
 
 Study Name: BATA
 
@@ -22,4 +23,5 @@ URL for preregistration (if applicable): https://osf.io/qha9e
 
 Date of preregistration or prospectus approval by study PI: Feb 22, 2022
 
-Slack Channel Link: https://wemosworkspace.slack.com/archives/C02JE3SBPNH
+Slack Channel Link: https://clearlabcollab.slack.com/archives/G05UN40GMDE
+
